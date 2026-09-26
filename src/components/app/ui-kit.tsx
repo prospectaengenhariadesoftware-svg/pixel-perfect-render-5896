@@ -78,7 +78,7 @@ const statusTone: Record<string, string> = {
 
 export function StatusBadge({ status }: { status: string }) {
   return (
-    <Badge variant="outline" className={cn("capitalize", statusTone[status] ?? statusTone.pendente)}>
+    <Badge variant="outline" className={cn("capitalize", statusTone[status] ?? statusTone["pendente"])}>
       {status}
     </Badge>
   );

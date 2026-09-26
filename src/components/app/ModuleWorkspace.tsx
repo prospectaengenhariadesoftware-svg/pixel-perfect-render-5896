@@ -57,7 +57,7 @@ function EntityPanel({ module, entity }: { module: ModuleKey; entity: EntityConf
   const [filter, setFilter] = useState("");
   const [creating, setCreating] = useState(false);
   const [removing, setRemoving] = useState<Row | null>(null);
-  const primary = entity.fields[0].name;
+  const primary = entity.fields[0]?.name ?? "id";
 
   const filtered = useMemo(() => {
     const q = filter.toLowerCase();
@@ -136,7 +136,7 @@ export function ModuleWorkspace({ module, entities }: { module: ModuleKey; entit
       <div className="mx-auto w-full max-w-7xl space-y-6">
         <PageHeader eyebrow="Módulo" title={mod.name} description={mod.description} actions={<DemoBadge />} />
         <div className="grid gap-6 xl:grid-cols-[1fr_300px]">
-          <Tabs defaultValue={entities[0].table}>
+          <Tabs defaultValue={entities[0]?.table}>
             <TabsList className="flex-wrap">
               {entities.map((e) => (
                 <TabsTrigger key={e.table} value={e.table}>{e.label}</TabsTrigger>
