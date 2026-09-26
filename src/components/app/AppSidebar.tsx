@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
-import { Lock, Settings, ShieldCheck, Sparkles } from "lucide-react";
-import { ACTIVE_MODULES, DEMO_TENANT, MODULES } from "@/lib/modules";
+import { Lock, Settings, Sparkles } from "lucide-react";
+import { DEMO_TENANT, MODULES } from "@/lib/modules";
+import { useTenant } from "@/lib/tenant-context";
 import { cn } from "@/lib/utils";
 
 function BrandMark() {
@@ -22,6 +23,7 @@ function BrandMark() {
 }
 
 export function AppSidebar({ onNavigate }: { onNavigate?: () => void }) {
+  const { activeModules: ACTIVE_MODULES } = useTenant();
   return (
     <div className="bg-gradient-ink flex h-full w-full flex-col border-r border-sidebar-border text-sidebar-foreground">
       <div className="border-b border-sidebar-border px-4 py-5">
@@ -41,7 +43,7 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void }) {
               return (
                 <li key={mod.key}>
                   <Link
-                    to="/app/dashboard"
+                    to={mod.path}
                     onClick={onNavigate}
                     className="flex items-center gap-3 rounded-md px-3 py-2.5 text-sm text-sidebar-foreground/40 transition-colors hover:text-sidebar-foreground/70"
                   >
@@ -80,14 +82,9 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void }) {
         </p>
         <ul className="space-y-1">
           <li>
-            <span className="flex items-center gap-3 rounded-md px-3 py-2.5 text-sm text-sidebar-foreground/40">
-              <Settings className="h-4 w-4" /> Configurações
-            </span>
-          </li>
-          <li>
-            <span className="flex items-center gap-3 rounded-md px-3 py-2.5 text-sm text-sidebar-foreground/40">
-              <ShieldCheck className="h-4 w-4" /> Super-admin
-            </span>
+            <Link to="/app/modulos" onClick={onNavigate} activeProps={{ className: "bg-sidebar-accent text-sidebar-accent-foreground" }} className="flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium hover:bg-sidebar-accent/70 hover:text-sidebar-accent-foreground">
+              <Settings className="h-4 w-4" /> Módulos e plano
+            </Link>
           </li>
         </ul>
       </nav>

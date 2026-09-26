@@ -2,6 +2,7 @@ import { createFileRoute, Outlet } from "@tanstack/react-router";
 import { useState } from "react";
 import { AppSidebar } from "@/components/app/AppSidebar";
 import { Topbar } from "@/components/app/Topbar";
+import { TenantProvider } from "@/lib/tenant-context";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 
 export const Route = createFileRoute("/app")({
@@ -12,6 +13,7 @@ function AppLayout() {
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
+    <TenantProvider>
     <div className="flex min-h-screen bg-background">
       <aside className="hidden w-[268px] shrink-0 lg:block">
         <div className="fixed top-0 left-0 h-screen w-[268px]">
@@ -32,5 +34,6 @@ function AppLayout() {
         </main>
       </div>
     </div>
+    </TenantProvider>
   );
 }

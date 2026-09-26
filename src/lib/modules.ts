@@ -84,8 +84,8 @@ export const MODULES: ModuleDefinition[] = [
   },
 ];
 
-/** Placeholder até o Supabase próprio ser conectado. */
-export const ACTIVE_MODULES: ModuleKey[] = [
+/** Demonstração visual: estado inicial até o Supabase próprio ser conectado. */
+export const DEFAULT_ACTIVE_MODULES: ModuleKey[] = [
   "dashboard",
   "empresa",
   "rh",
@@ -99,3 +99,5 @@ export const DEMO_TENANT = {
   userName: "Ana Ribeiro",
   userRole: "Administradora",
 };
+
+export const getModule = (key: ModuleKey) => MODULES.find((m) => m.key === key)!;

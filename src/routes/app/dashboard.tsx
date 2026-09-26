@@ -12,7 +12,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
-import { ACTIVE_MODULES, DEMO_TENANT, MODULES } from "@/lib/modules";
+import { DEMO_TENANT, MODULES } from "@/lib/modules";
+import { useTenant } from "@/lib/tenant-context";
 
 export const Route = createFileRoute("/app/dashboard")({
   head: () => ({
@@ -57,6 +58,7 @@ const pendencias = [
 ];
 
 function Dashboard() {
+  const { activeModules: ACTIVE_MODULES } = useTenant();
   return (
     <div className="mx-auto w-full max-w-7xl space-y-8">
       <div className="flex flex-wrap items-end justify-between gap-4">
@@ -65,7 +67,7 @@ function Dashboard() {
           <h1 className="mt-1 text-3xl font-semibold">Visão geral</h1>
         </div>
         <Badge variant="outline" className="gap-1.5 border-accent bg-accent/40 text-accent-foreground">
-          <CalendarClock className="h-3.5 w-3.5" /> Dados de demonstração
+          <CalendarClock className="h-3.5 w-3.5" /> Demonstração visual
         </Badge>
       </div>
 

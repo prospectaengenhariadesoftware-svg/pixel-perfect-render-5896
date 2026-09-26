@@ -3,6 +3,7 @@ import { Bell, LogOut, Menu, Search } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
 import { DEMO_TENANT } from "@/lib/modules";
 
@@ -32,9 +33,16 @@ export function Topbar({ onOpenMenu }: { onOpenMenu: () => void }) {
       </div>
 
       <div className="ml-auto flex items-center gap-1">
-        <Button variant="ghost" size="icon" aria-label="Notificações">
-          <Bell className="h-4 w-4" />
-        </Button>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="ghost" size="icon" aria-label="Notificações">
+              <Bell className="h-4 w-4" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent align="end" className="w-64 text-sm text-muted-foreground">
+            Nenhuma notificação no momento.
+          </PopoverContent>
+        </Popover>
         <div className="flex items-center gap-2 pl-2">
           <Avatar className="h-8 w-8">
             <AvatarFallback className="bg-accent text-xs font-semibold text-accent-foreground">
