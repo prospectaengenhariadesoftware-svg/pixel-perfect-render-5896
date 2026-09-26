@@ -4,6 +4,7 @@ import { MailCheck } from "lucide-react";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { getSupabase, isSupabaseConfigured } from "@/lib/supabase";
 import { AuthShell } from "@/components/auth/AuthShell";
 import { Button } from "@/components/ui/button";
 import {
@@ -60,7 +61,12 @@ function ForgotPasswordPage() {
         </div>
       ) : (
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(() => setSent(true))} className="space-y-4">
+          <form onSubmit={form.handleSubmit(async ({ email }) => {
+              await getSupabase()?.auth.resetPasswordForEmail(email, {
+                redirectTo: `${window.location.origin}/reset-password`,
+              });
+              setSent(true);
+            })} className="space-y-4">
             <FormField
               control={form.control}
               name="email"
@@ -74,7 +80,7 @@ function ForgotPasswordPage() {
                 </FormItem>
               )}
             />
-            <Button type="submit" className="w-full">
+            <Button type="submit" className="w-full" disabled={!isSupabaseConfigured || form.formState.isSubmitting}>
               Enviar link de recuperação
             </Button>
             <Button variant="ghost" className="w-full" asChild>

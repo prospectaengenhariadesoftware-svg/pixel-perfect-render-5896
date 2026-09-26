@@ -4,6 +4,7 @@
 - `/` — apresentação
 - `/login` — entrar
 - `/forgot-password` — recuperar senha
+- `/reset-password` — definir nova senha (link do e-mail)
 
 ## Autenticadas (layout `/app`)
 - `/app` → redireciona para `/app/dashboard`
@@ -18,4 +19,4 @@
 - `/admin` — super-admin da plataforma (`platform_admins`)
 
 ## Proteção
-Hoje o layout `/app` não exige login (modo demonstração). Ao conectar o Supabase, as rotas autenticadas passam para um layout protegido que redireciona para `/login`, e cada função de servidor valida sessão, tenant e módulo. Nenhuma rota admin será publicada sem essa proteção.
+O layout `/app` (ssr desligado) redireciona para `/login` sem sessão válida. Sem Supabase configurado, abre em "modo de configuração" sem nenhum dado. A proteção real dos dados é o RLS no banco.

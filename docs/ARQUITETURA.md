@@ -31,4 +31,4 @@ Navegador ──> App (TanStack Start / React 19, SSR + funções de servidor)
 4. Módulo não contratado: bloqueado na UI (ModuleGate) **e** no banco (`has_module`).
 
 ## Estado atual
-Interface completa com **dados de demonstração visual** salvos só no navegador. Falta conectar o Supabase próprio para ativar login real e persistência.
+Fundação pronta: login real via Supabase (`src/lib/supabase.ts`, só chave anon), tenant e módulos lidos de `tenant_users`/`tenant_modules` (`src/lib/tenant-context.tsx`). Nenhum dado fictício. Páginas dos módulos mostram só o escopo planejado; CRUDs virão módulo a módulo.
