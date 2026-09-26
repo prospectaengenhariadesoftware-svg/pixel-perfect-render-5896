@@ -1,85 +1,111 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { DEFAULT_ACTIVE_MODULES, type ModuleKey } from "@/lib/modules";
+import type { User } from "@supabase/supabase-js";
+import type { ModuleKey } from "@/lib/modules";
+import { getSupabase, isSupabaseConfigured } from "@/lib/supabase";
 
 /**
- * Estado do tenant no navegador — DEMONSTRAÇÃO VISUAL.
- * Quando o Supabase próprio for conectado, os módulos ativos virão de
- * `tenant_modules` e as trilhas de auditoria de `tenant_audit_logs`,
- * sempre validados no servidor (RLS + checagem de módulo contratado).
+ * Estado do tenant do usuário logado.
+ * O tenant vem SEMPRE de `tenant_users` (filtrado por RLS para o próprio
+ * usuário) — nunca da URL. Módulos ativos vêm de `tenant_modules`.
+ * Esta camada só controla a interface; a proteção real é o RLS no banco.
  */
 export interface AuditEntry {
   id: string;
   at: string;
   action: string;
-  module: ModuleKey | "plataforma";
+  module: string;
   detail: string;
 }
 
+export type TenantStatus = "unconfigured" | "loading" | "no-tenant" | "ready" | "error";
+
+export interface TenantInfo {
+  id: string;
+  name: string;
+  isOwner: boolean;
+}
+
 interface TenantState {
+  status: TenantStatus;
+  error: string | null;
+  user: User | null;
+  tenant: TenantInfo | null;
   activeModules: ModuleKey[];
   isActive: (key: ModuleKey) => boolean;
-  toggleModule: (key: ModuleKey) => void;
-  audit: AuditEntry[];
-  logAudit: (e: Omit<AuditEntry, "id" | "at">) => void;
+  reload: () => void;
 }
 
 const Ctx = createContext<TenantState | null>(null);
-const STORAGE_KEY = "es-demo-tenant-v1";
 
 export function TenantProvider({ children }: { children: ReactNode }) {
-  const [activeModules, setActive] = useState<ModuleKey[]>(DEFAULT_ACTIVE_MODULES);
-  const [audit, setAudit] = useState<AuditEntry[]>([]);
-  const [loaded, setLoaded] = useState(false);
+  const [status, setStatus] = useState<TenantStatus>(isSupabaseConfigured ? "loading" : "unconfigured");
+  const [error, setError] = useState<string | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [tenant, setTenant] = useState<TenantInfo | null>(null);
+  const [activeModules, setActive] = useState<ModuleKey[]>([]);
+  const [nonce, setNonce] = useState(0);
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed.activeModules)) setActive(parsed.activeModules);
-        if (Array.isArray(parsed.audit)) setAudit(parsed.audit);
+    const supabase = getSupabase();
+    if (!supabase) return;
+    let cancelled = false;
+    (async () => {
+      setStatus("loading");
+      const { data: userData } = await supabase.auth.getUser();
+      if (cancelled) return;
+      setUser(userData.user);
+      if (!userData.user) return setStatus("no-tenant");
+
+      const { data: memberships, error: mErr } = await supabase
+        .from("tenant_users")
+        .select("tenant_id, is_owner, tenants(name)")
+        .eq("user_id", userData.user.id)
+        .eq("status", "ativo")
+        .limit(1);
+      if (cancelled) return;
+      if (mErr) {
+        setError(mErr.message);
+        return setStatus("error");
       }
-    } catch {
-      /* ignora estado corrompido */
-    }
-    setLoaded(true);
-  }, []);
+      const m = memberships?.[0] as
+        | { tenant_id: string; is_owner: boolean; tenants: { name: string } | { name: string }[] | null }
+        | undefined;
+      if (!m) return setStatus("no-tenant");
+      const t = Array.isArray(m.tenants) ? m.tenants[0] : m.tenants;
+      setTenant({ id: m.tenant_id, name: t?.name ?? "Empresa", isOwner: m.is_owner });
 
-  useEffect(() => {
-    if (loaded) localStorage.setItem(STORAGE_KEY, JSON.stringify({ activeModules, audit }));
-  }, [activeModules, audit, loaded]);
+      const { data: mods, error: modErr } = await supabase
+        .from("tenant_modules")
+        .select("module_key")
+        .eq("tenant_id", m.tenant_id)
+        .eq("enabled", true);
+      if (cancelled) return;
+      if (modErr) {
+        setError(modErr.message);
+        return setStatus("error");
+      }
+      const keys = (mods ?? []).map((r) => r.module_key as ModuleKey);
+      setActive(Array.from(new Set<ModuleKey>(["dashboard", ...keys])));
+      setStatus("ready");
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [nonce]);
 
-  const logAudit = useCallback((e: Omit<AuditEntry, "id" | "at">) => {
-    setAudit((prev) =>
-      [{ ...e, id: crypto.randomUUID(), at: new Date().toISOString() }, ...prev].slice(0, 200),
-    );
-  }, []);
-
-  const toggleModule = useCallback(
-    (key: ModuleKey) => {
-      if (key === "dashboard") return;
-      setActive((prev) => {
-        const on = prev.includes(key);
-        logAudit({
-          action: on ? "Módulo desativado" : "Módulo ativado",
-          module: "plataforma",
-          detail: key,
-        });
-        return on ? prev.filter((k) => k !== key) : [...prev, key];
-      });
-    },
-    [logAudit],
-  );
+  const reload = useCallback(() => setNonce((n) => n + 1), []);
 
   const value = useMemo<TenantState>(
     () => ({
+      status,
+      error,
+      user,
+      tenant,
       activeModules,
       isActive: (k) => activeModules.includes(k),
-      toggleModule,
-      audit,
-      logAudit,
+      reload,
     }),
-    [activeModules, audit, toggleModule, logAudit],
+    [status, error, user, tenant, activeModules, reload],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
