@@ -3,7 +3,7 @@
 ## Como o sistema está organizado
 - **Páginas:** pasta `src/routes`. Cada arquivo é uma página (ex.: `app/rh.tsx` = tela de RH).
 - **Módulos e preços:** arquivo `src/lib/modules.ts`.
-- **Banco de dados:** arquivos em `supabase/`. É o "desenho" das tabelas e regras de acesso.
+- **Banco de dados:** arquivos em `database/`. É o "desenho" das tabelas e regras de acesso.
 - **Documentação:** esta pasta `docs`.
 
 ## O que pode mexer com tranquilidade
@@ -12,7 +12,7 @@
 - Pedir mudanças visuais pelo chat da Lovable.
 
 ## O que NÃO mexer sem ajuda
-- Arquivos em `supabase/` (regras de segurança).
+- Arquivos em `database/` (regras de segurança).
 - `src/routeTree.gen.ts` (gerado automaticamente).
 - Nunca colar a chave `SERVICE_ROLE_KEY` em código ou no chat.
 

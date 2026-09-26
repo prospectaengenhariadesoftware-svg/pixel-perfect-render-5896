@@ -12,8 +12,8 @@ Ver tabela em `SEGURANCA.md`. Configurar separadamente para preview e produção
 
 ## Supabase self-hosted
 1. Acessar o Studio em https://supabase.codexa.api.br.
-2. Rodar `supabase/migrations/0001_base_multitenant.sql` no SQL Editor.
-3. Rodar o teste `supabase/tests/tenant_isolation.sql`.
+2. Rodar `database/0001_base_multitenant.sql` no SQL Editor.
+3. Rodar o teste `database/tests/tenant_isolation.sql`.
 4. Configurar Auth (URL do site e redirecionamentos para os domínios de preview e produção).
 5. Fazer backup diário do Postgres da VPS.
 

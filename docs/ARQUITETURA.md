@@ -22,7 +22,7 @@ Navegador ──> App (TanStack Start / React 19, SSR + funções de servidor)
 - `src/components/app/` — AppShell (layout em `routes/app.tsx`), Sidebar, Topbar, ModuleGate, ModuleWorkspace e `ui-kit.tsx` (PageHeader, StatCard, DataTable, FilterBar, StatusBadge, EmptyState, LoadingState, ConfirmDialog, FormModal, AuditTimeline).
 - `src/lib/modules.ts` — catálogo de módulos e preços.
 - `src/lib/tenant-context.tsx` — estado do tenant (hoje local/demonstração).
-- `supabase/migrations/` — SQL do banco. `supabase/tests/` — teste Tenant A/B.
+- `database/` — SQL do banco. `database/tests/` — teste Tenant A/B.
 
 ## Multi-tenant
 1. Usuário faz login (Supabase Auth).

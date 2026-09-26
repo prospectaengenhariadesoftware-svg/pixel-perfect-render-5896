@@ -1,6 +1,6 @@
 # Banco de dados
 
-Script completo: `supabase/migrations/0001_base_multitenant.sql`.
+Script completo: `database/0001_base_multitenant.sql`.
 
 ## Tabelas base
 | Tabela | Função |
@@ -36,4 +36,4 @@ Modelo pronto: `rh_employees` no script.
 - Financeiro: financial_accounts_payable, financial_accounts_receivable, financial_categories, financial_cost_centers, financial_transactions
 
 ## Teste Tenant A/B
-`supabase/tests/tenant_isolation.sql` — confirma que o usuário B não enxerga dados do tenant A.
+`database/tests/tenant_isolation.sql` — confirma que o usuário B não enxerga dados do tenant A.

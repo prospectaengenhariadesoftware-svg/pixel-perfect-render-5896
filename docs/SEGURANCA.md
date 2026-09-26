@@ -6,7 +6,7 @@ Todas as tabelas sensíveis têm Row Level Security. Sem policy, nada é visíve
 ## Isolamento por tenant
 - O tenant do usuário vem de `tenant_users` (servidor/banco), nunca só da URL.
 - `can_access(tenant, modulo, permissao)` exige: membro ativo + módulo contratado + permissão.
-- Teste obrigatório: `supabase/tests/tenant_isolation.sql`.
+- Teste obrigatório: `database/tests/tenant_isolation.sql`.
 
 ## service_role proibido no frontend
 A chave `SERVICE_ROLE_KEY` ignora RLS. Só pode existir em variáveis de servidor e ser lida dentro de funções de servidor. Nunca com prefixo `VITE_`.
