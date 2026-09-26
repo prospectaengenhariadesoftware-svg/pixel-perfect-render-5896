@@ -1,52 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { ModuleWorkspace, type EntityConfig } from "@/components/app/ModuleWorkspace";
-
-const entities: EntityConfig[] = [
-  {
-    "table": "rh_employees",
-    "label": "Colaboradores",
-    "singular": "Colaborador",
-    "fields": [
-      {
-        "name": "nome",
-        "label": "Nome",
-        "required": true
-      },
-      {
-        "name": "cargo",
-        "label": "Cargo"
-      },
-      {
-        "name": "departamento",
-        "label": "Departamento"
-      }
-    ]
-  },
-  {
-    "table": "rh_roles",
-    "label": "Cargos",
-    "singular": "Cargo",
-    "fields": [
-      {
-        "name": "nome",
-        "label": "Nome do cargo",
-        "required": true
-      }
-    ]
-  },
-  {
-    "table": "rh_departments",
-    "label": "Departamentos",
-    "singular": "Departamento",
-    "fields": [
-      {
-        "name": "nome",
-        "label": "Nome",
-        "required": true
-      }
-    ]
-  }
-];
+import { ModuleHome } from "@/components/app/ModuleHome";
 
 export const Route = createFileRoute("/app/rh")({
   head: () => ({
@@ -59,5 +12,5 @@ export const Route = createFileRoute("/app/rh")({
       { name: "twitter:card", content: "summary" },
     ],
   }),
-  component: () => <ModuleWorkspace module="rh" entities={entities} />,
+  component: () => <ModuleHome module="rh" />,
 });

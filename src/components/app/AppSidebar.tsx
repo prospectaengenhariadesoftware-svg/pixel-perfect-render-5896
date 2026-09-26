@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { Lock, Settings, Sparkles } from "lucide-react";
-import { DEMO_TENANT, MODULES } from "@/lib/modules";
+import { MODULES } from "@/lib/modules";
 import { useTenant } from "@/lib/tenant-context";
 import { cn } from "@/lib/utils";
 
@@ -23,7 +23,7 @@ function BrandMark() {
 }
 
 export function AppSidebar({ onNavigate }: { onNavigate?: () => void }) {
-  const { activeModules: ACTIVE_MODULES } = useTenant();
+  const { activeModules: ACTIVE_MODULES, status } = useTenant();
   return (
     <div className="bg-gradient-ink flex h-full w-full flex-col border-r border-sidebar-border text-sidebar-foreground">
       <div className="border-b border-sidebar-border px-4 py-5">
@@ -91,10 +91,10 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void }) {
 
       <div className="m-3 rounded-lg border border-sidebar-border bg-sidebar-accent/40 p-4">
         <p className="flex items-center gap-2 font-display text-sm font-semibold text-sidebar-accent-foreground">
-          <Sparkles className="h-4 w-4" /> {DEMO_TENANT.plan}
+          <Sparkles className="h-4 w-4" /> Módulos contratados
         </p>
         <p className="mt-1 text-xs text-sidebar-foreground/60">
-          {ACTIVE_MODULES.length} de {MODULES.length} módulos ativos
+          {status === "ready" ? `${ACTIVE_MODULES.length} de ${MODULES.length} ativos` : "Aguardando conexão"}
         </p>
       </div>
     </div>
