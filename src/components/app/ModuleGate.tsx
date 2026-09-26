@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { getModule, type ModuleKey } from "@/lib/modules";
 import { useTenant } from "@/lib/tenant-context";
-import { EmptyState } from "./ui-kit";
+import { EmptyState, LoadingState } from "./ui-kit";
 
 /**
  * Bloqueio de UI para módulos não contratados.
@@ -12,7 +12,8 @@ import { EmptyState } from "./ui-kit";
  * no servidor (checagem em tenant_modules) e no banco (RLS).
  */
 export function ModuleGate({ module, children }: { module: ModuleKey; children: ReactNode }) {
-  const { isActive } = useTenant();
+  const { isActive, status } = useTenant();
+  if (status === "loading") return <LoadingState label="Verificando acesso ao módulo..." />;
   if (isActive(module)) return <>{children}</>;
   const mod = getModule(module);
   return (

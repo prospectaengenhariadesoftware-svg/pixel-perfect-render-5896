@@ -2,7 +2,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { ArrowRight, Loader2, ShieldCheck } from "lucide-react";
 import { useForm } from "react-hook-form";
-import { toast } from "sonner";
+import { useState } from "react";
+import { getSupabase, isSupabaseConfigured } from "@/lib/supabase";
 import { z } from "zod";
 import { AuthShell } from "@/components/auth/AuthShell";
 import { Button } from "@/components/ui/button";
@@ -45,10 +46,17 @@ function LoginPage() {
     defaultValues: { email: "", password: "" },
   });
 
-  async function onSubmit() {
-    toast.success("Acesso liberado", {
-      description: "Modo demonstração — conecte seu Supabase para validar credenciais reais.",
-    });
+  const [authError, setAuthError] = useState<string | null>(null);
+
+  async function onSubmit(values: z.infer<typeof schema>) {
+    setAuthError(null);
+    const supabase = getSupabase();
+    if (!supabase) return;
+    const { error } = await supabase.auth.signInWithPassword(values);
+    if (error) {
+      setAuthError("E-mail ou senha incorretos.");
+      return;
+    }
     await navigate({ to: "/app/dashboard" });
   }
 
@@ -103,7 +111,12 @@ function LoginPage() {
               </FormItem>
             )}
           />
-          <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
+          {authError && <p className="text-sm font-medium text-destructive">{authError}</p>}
+          <Button
+            type="submit"
+            className="w-full"
+            disabled={!isSupabaseConfigured || form.formState.isSubmitting}
+          >
             {form.formState.isSubmitting ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
@@ -117,8 +130,9 @@ function LoginPage() {
 
       <p className="mt-6 flex items-start gap-2 rounded-md border border-border bg-secondary/50 p-3 text-xs text-muted-foreground">
         <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-        Autenticação e isolamento por tenant passarão a valer assim que o Supabase da sua VPS for
-        conectado ao projeto.
+        {isSupabaseConfigured
+          ? "Acesso protegido. Cada empresa vê somente os próprios dados."
+          : "O login será liberado assim que o banco de dados da plataforma for conectado."}
       </p>
     </AuthShell>
   );

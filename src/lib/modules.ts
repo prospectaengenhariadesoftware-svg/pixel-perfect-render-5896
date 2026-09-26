@@ -84,20 +84,13 @@ export const MODULES: ModuleDefinition[] = [
   },
 ];
 
-/** Demonstração visual: estado inicial até o Supabase próprio ser conectado. */
-export const DEFAULT_ACTIVE_MODULES: ModuleKey[] = [
-  "dashboard",
-  "empresa",
-  "rh",
-  "suprimentos",
-  "obras",
-];
-
-export const DEMO_TENANT = {
-  name: "Construtora Meridiano",
-  plan: "Plano Profissional",
-  userName: "Ana Ribeiro",
-  userRole: "Administradora",
+/** Escopo planejado de cada módulo (exibido nas páginas iniciais). */
+export const MODULE_ROADMAP: Record<Exclude<ModuleKey, "dashboard">, string[]> = {
+  empresa: ["Dados cadastrais e CNPJ", "Filiais e unidades", "Documentos e certidões com vencimento"],
+  rh: ["Cadastro de colaboradores", "Cargos e departamentos", "ASO, treinamentos e documentos"],
+  suprimentos: ["Requisições de compra", "Cotações e fornecedores", "Pedidos e almoxarifado"],
+  obras: ["Contratos e clientes", "Medições e diários de obra", "Cronogramas e avanço físico"],
+  financeiro: ["Contas a pagar e a receber", "Fluxo de caixa", "Centros de custo por obra"],
 };
 
 export const getModule = (key: ModuleKey) => MODULES.find((m) => m.key === key)!;

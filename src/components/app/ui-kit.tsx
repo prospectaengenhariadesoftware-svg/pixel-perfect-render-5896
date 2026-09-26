@@ -84,14 +84,6 @@ export function StatusBadge({ status }: { status: string }) {
   );
 }
 
-export function DemoBadge() {
-  return (
-    <Badge variant="outline" className="border-accent bg-accent/40 text-accent-foreground">
-      Demonstração visual
-    </Badge>
-  );
-}
-
 export function EmptyState({
   icon: Icon = Inbox,
   title,
