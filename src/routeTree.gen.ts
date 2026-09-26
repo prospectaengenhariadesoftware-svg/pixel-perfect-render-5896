@@ -15,6 +15,11 @@ import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppIndexRouteImport } from './routes/app/index'
 import { Route as AppDashboardRouteImport } from './routes/app/dashboard'
+import { Route as AppEmpresaRouteImport } from './routes/app/empresa'
+import { Route as AppFinanceiroRouteImport } from './routes/app/financeiro'
+import { Route as AppObrasRouteImport } from './routes/app/obras'
+import { Route as AppRhRouteImport } from './routes/app/rh'
+import { Route as AppSuprimentosRouteImport } from './routes/app/suprimentos'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -46,6 +51,31 @@ const AppDashboardRoute = AppDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AppRoute,
 } as any)
+const AppEmpresaRoute = AppEmpresaRouteImport.update({
+  id: '/empresa',
+  path: '/empresa',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppFinanceiroRoute = AppFinanceiroRouteImport.update({
+  id: '/financeiro',
+  path: '/financeiro',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppObrasRoute = AppObrasRouteImport.update({
+  id: '/obras',
+  path: '/obras',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppRhRoute = AppRhRouteImport.update({
+  id: '/rh',
+  path: '/rh',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSuprimentosRoute = AppSuprimentosRouteImport.update({
+  id: '/suprimentos',
+  path: '/suprimentos',
+  getParentRoute: () => AppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -53,6 +83,11 @@ export interface FileRoutesByFullPath {
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/app/dashboard': typeof AppDashboardRoute
+  '/app/empresa': typeof AppEmpresaRoute
+  '/app/financeiro': typeof AppFinanceiroRoute
+  '/app/obras': typeof AppObrasRoute
+  '/app/rh': typeof AppRhRoute
+  '/app/suprimentos': typeof AppSuprimentosRoute
   '/app/': typeof AppIndexRoute
 }
 export interface FileRoutesByTo {
@@ -60,6 +95,11 @@ export interface FileRoutesByTo {
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/app/dashboard': typeof AppDashboardRoute
+  '/app/empresa': typeof AppEmpresaRoute
+  '/app/financeiro': typeof AppFinanceiroRoute
+  '/app/obras': typeof AppObrasRoute
+  '/app/rh': typeof AppRhRoute
+  '/app/suprimentos': typeof AppSuprimentosRoute
   '/app': typeof AppIndexRoute
 }
 export interface FileRoutesById {
@@ -69,14 +109,39 @@ export interface FileRoutesById {
   '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/app/dashboard': typeof AppDashboardRoute
+  '/app/empresa': typeof AppEmpresaRoute
+  '/app/financeiro': typeof AppFinanceiroRoute
+  '/app/obras': typeof AppObrasRoute
+  '/app/rh': typeof AppRhRoute
+  '/app/suprimentos': typeof AppSuprimentosRoute
   '/app/': typeof AppIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/app' | '/forgot-password' | '/login' | '/app/dashboard' | '/app/'
+    | '/'
+    | '/app'
+    | '/forgot-password'
+    | '/login'
+    | '/app/dashboard'
+    | '/app/empresa'
+    | '/app/financeiro'
+    | '/app/obras'
+    | '/app/rh'
+    | '/app/suprimentos'
+    | '/app/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/forgot-password' | '/login' | '/app/dashboard' | '/app'
+  to:
+    | '/'
+    | '/forgot-password'
+    | '/login'
+    | '/app/dashboard'
+    | '/app/empresa'
+    | '/app/financeiro'
+    | '/app/obras'
+    | '/app/rh'
+    | '/app/suprimentos'
+    | '/app'
   id:
     | '__root__'
     | '/'
@@ -84,6 +149,11 @@ export interface FileRouteTypes {
     | '/forgot-password'
     | '/login'
     | '/app/dashboard'
+    | '/app/empresa'
+    | '/app/financeiro'
+    | '/app/obras'
+    | '/app/rh'
+    | '/app/suprimentos'
     | '/app/'
   fileRoutesById: FileRoutesById
 }
@@ -138,16 +208,61 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppDashboardRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/empresa': {
+      id: '/app/empresa'
+      path: '/empresa'
+      fullPath: '/app/empresa'
+      preLoaderRoute: typeof AppEmpresaRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/financeiro': {
+      id: '/app/financeiro'
+      path: '/financeiro'
+      fullPath: '/app/financeiro'
+      preLoaderRoute: typeof AppFinanceiroRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/obras': {
+      id: '/app/obras'
+      path: '/obras'
+      fullPath: '/app/obras'
+      preLoaderRoute: typeof AppObrasRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/rh': {
+      id: '/app/rh'
+      path: '/rh'
+      fullPath: '/app/rh'
+      preLoaderRoute: typeof AppRhRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/suprimentos': {
+      id: '/app/suprimentos'
+      path: '/suprimentos'
+      fullPath: '/app/suprimentos'
+      preLoaderRoute: typeof AppSuprimentosRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
 interface AppRouteChildren {
   AppDashboardRoute: typeof AppDashboardRoute
+  AppEmpresaRoute: typeof AppEmpresaRoute
+  AppFinanceiroRoute: typeof AppFinanceiroRoute
+  AppObrasRoute: typeof AppObrasRoute
+  AppRhRoute: typeof AppRhRoute
+  AppSuprimentosRoute: typeof AppSuprimentosRoute
   AppIndexRoute: typeof AppIndexRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
   AppDashboardRoute: AppDashboardRoute,
+  AppEmpresaRoute: AppEmpresaRoute,
+  AppFinanceiroRoute: AppFinanceiroRoute,
+  AppObrasRoute: AppObrasRoute,
+  AppRhRoute: AppRhRoute,
+  AppSuprimentosRoute: AppSuprimentosRoute,
   AppIndexRoute: AppIndexRoute,
 }
 
