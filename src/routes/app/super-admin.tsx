@@ -38,7 +38,8 @@ import {
 import {
   documentKind,
   maskCep,
-  maskCpfCnpj,
+  maskCnpj,
+  maskCpf,
   maskPhone,
   onlyDigits,
   slugify,
@@ -177,6 +178,31 @@ const initialTenantForm = () => ({
 
 type TenantForm = ReturnType<typeof initialTenantForm>;
 
+const ensureArray = <T,>(value: unknown): T[] => (Array.isArray(value) ? (value as T[]) : []);
+
+function normalizeOverview(data: unknown): AdminOverview {
+  const overview = (data ?? {}) as Partial<AdminOverview>;
+  return {
+    stats: {
+      tenants_total: Number(overview.stats?.tenants_total ?? 0),
+      tenants_active: Number(overview.stats?.tenants_active ?? 0),
+      users_total: Number(overview.stats?.users_total ?? 0),
+      platform_admins_total: Number(overview.stats?.platform_admins_total ?? 0),
+      modules_total: Number(overview.stats?.modules_total ?? 0),
+    },
+    modules: ensureArray<AdminModule>(overview.modules),
+    tenants: ensureArray<AdminTenant>(overview.tenants).map((tenant) => ({
+      ...tenant,
+      users: ensureArray<AdminUser>(tenant.users),
+      modules: ensureArray<AdminModule>(tenant.modules),
+      audit_logs: ensureArray<AdminAuditLog>(tenant.audit_logs),
+      owner_contacts: ensureArray<OwnerContact>(tenant.owner_contacts),
+      company_data:
+        tenant.company_data && typeof tenant.company_data === "object" ? tenant.company_data : {},
+    })),
+  };
+}
+
 function SuperAdminPage() {
   const { isPlatformAdmin, status } = useTenant();
   const [overview, setOverview] = useState<AdminOverview | null>(null);
@@ -202,7 +228,7 @@ function SuperAdminPage() {
       setError(rpcError.message);
       setOverview(null);
     } else {
-      setOverview(data as AdminOverview);
+      setOverview(normalizeOverview(data));
     }
     setLoading(false);
   }, []);
@@ -800,7 +826,10 @@ function SuperAdminPage() {
                   value={tenantForm.document}
                   inputMode="numeric"
                   onChange={(event) => {
-                    const document = maskCpfCnpj(event.target.value);
+                    const document =
+                      tenantForm.personType === "pj"
+                        ? maskCnpj(event.target.value)
+                        : maskCpf(event.target.value);
                     setTenantForm((current) => ({ ...current, document }));
                     if (onlyDigits(document).length === 14) void lookupCnpj(document);
                   }}
