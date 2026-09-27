@@ -19,6 +19,7 @@ type CompanyData = {
   neighborhood?: string;
   city?: string;
   state?: string;
+  [key: string]: unknown;
 };
 
 type OwnerContactRow = { id: string; name: string; phone: string | null; email: string | null; function_title: string | null };
@@ -36,6 +37,7 @@ export function EmpresaModule() {
   const { tenant, status: tenantStatus } = useTenant();
   const tenantId = tenant?.id ?? null;
   const [company, setCompany] = useState<CompanyData>(emptyCompany);
+  const [storedSettings, setStoredSettings] = useState<Record<string, unknown>>({});
   const [owners, setOwners] = useState<OwnerContact[]>([]);
   const [users, setUsers] = useState<TenantUser[]>([]);
   const [loading, setLoading] = useState(true);
@@ -54,13 +56,17 @@ export function EmpresaModule() {
       try {
         const { data: settings, error: settingsError } = await supabase.from("tenant_settings").select("settings").eq("tenant_id", tenantId).maybeSingle();
         if (settingsError) throw settingsError;
-        const stored = settings?.settings && typeof settings.settings === "object" ? (settings.settings as CompanyData) : {};
+        const stored = settings?.settings && typeof settings.settings === "object" && !Array.isArray(settings.settings)
+          ? (settings.settings as Record<string, unknown>)
+          : {};
+        const companyStored = stored as CompanyData;
         const { data: ownerRows, error: ownersError } = await supabase.from("tenant_owner_contacts").select("id, name, phone, email, function_title").eq("tenant_id", tenantId).order("name", { ascending: true });
         if (ownersError) throw ownersError;
         const { data: userRows, error: usersError } = await supabase.from("tenant_users").select("id, user_id, is_owner, status, created_at, tenant_roles(name)").eq("tenant_id", tenantId).order("is_owner", { ascending: false }).order("created_at", { ascending: true }).limit(500);
         if (usersError) throw usersError;
         if (!cancelled) {
-          setCompany({ ...emptyCompany, ...stored, tradeName: stored.tradeName || tenant?.name || "" });
+          setStoredSettings(stored);
+          setCompany({ ...emptyCompany, ...companyStored, tradeName: companyStored.tradeName || tenant?.name || "" });
           setOwners(((ownerRows ?? []) as OwnerContactRow[]).map((o) => ({ id: o.id, name: o.name, phone: o.phone, email: o.email, function: o.function_title })));
           setUsers(((userRows ?? []) as TenantUserRow[]).map((u) => ({ id: u.id, user_id: u.user_id, role: u.tenant_roles?.name ?? null, is_owner: u.is_owner, status: u.status, created_at: u.created_at })));
         }
@@ -75,23 +81,40 @@ export function EmpresaModule() {
 
   async function saveCompany() {
     if (!supabase || !tenantId) return;
-    if (!company.legalName?.trim()) { setError("Informe a Razão Social."); return; }
-    if (!company.document?.trim()) { setError("Informe o CNPJ/CPF."); return; }
+    const isPJ = company.personType !== "pf";
+    if (isPJ && !company.legalName?.trim()) { setError("Informe a Razão Social."); return; }
+    if (!company.document?.trim()) { setError(isPJ ? "Informe o CNPJ." : "Informe o CPF."); return; }
     setSaving(true); setError(null); setSuccess(null);
     try {
-      const payload = { ...company, legalName: company.legalName.trim(), tradeName: company.tradeName?.trim(), document: company.document.trim(), state: company.state?.trim().toUpperCase() };
+      const normalizedCompany = {
+        ...company,
+        legalName: company.legalName?.trim(),
+        tradeName: company.tradeName?.trim(),
+        document: company.document.trim(),
+        email: company.email?.trim(),
+        phone: company.phone?.trim(),
+        cep: company.cep?.trim(),
+        street: company.street?.trim(),
+        number: company.number?.trim(),
+        complement: company.complement?.trim(),
+        neighborhood: company.neighborhood?.trim(),
+        city: company.city?.trim(),
+        state: company.state?.trim().toUpperCase(),
+      };
+      const payload = { ...storedSettings, ...normalizedCompany };
       const { error: saveError } = await supabase.from("tenant_settings").upsert({ tenant_id: tenantId, settings: payload }, { onConflict: "tenant_id" });
       if (saveError) throw saveError;
-      setCompany(payload);
+      setStoredSettings(payload);
+      setCompany(normalizedCompany);
       setSuccess("Dados da empresa salvos com sucesso.");
     } catch (e) { setError(e instanceof Error ? e.message : "Não foi possível salvar os dados da empresa."); }
     finally { setSaving(false); }
   }
 
   const fields: Array<{ key: keyof CompanyData; label: string; placeholder?: string; maxLength?: number }> = [
-    { key: "document", label: "CNPJ / CPF", placeholder: "Digite o CNPJ ou CPF" },
-    { key: "legalName", label: "Razão Social" },
-    { key: "tradeName", label: "Nome Fantasia" },
+    { key: "document", label: company.personType === "pf" ? "CPF" : "CNPJ", placeholder: company.personType === "pf" ? "000.000.000-00" : "00.000.000/0000-00" },
+    { key: "legalName", label: company.personType === "pf" ? "Nome completo" : "Razão Social" },
+    { key: "tradeName", label: company.personType === "pf" ? "Nome de exibição" : "Nome Fantasia" },
     { key: "email", label: "E-mail" },
     { key: "phone", label: "Telefone", placeholder: "+55 (13) 99999-9999" },
     { key: "cep", label: "CEP" },
@@ -111,7 +134,7 @@ export function EmpresaModule() {
       <TabsList className="flex h-auto flex-wrap justify-start"><TabsTrigger value="dados">Dados da Empresa</TabsTrigger><TabsTrigger value="donos">Donos / Responsáveis</TabsTrigger><TabsTrigger value="usuarios">Usuários</TabsTrigger></TabsList>
       <TabsContent value="dados"><Card className="shadow-card"><CardHeader><CardTitle>Dados da Empresa</CardTitle></CardHeader><CardContent>
         {loading ? <div className="text-sm text-muted-foreground">Carregando dados da empresa...</div> : <div className="space-y-5">
-          <div className="grid gap-4 md:grid-cols-2">{fields.map((field) => <label key={field.key} className="space-y-1.5"><span className="text-sm font-medium">{field.label}</span><input className={fieldClass} value={String(company[field.key] ?? "")} placeholder={field.placeholder} maxLength={field.maxLength} onChange={(e) => change(field.key, e.target.value)} /></label>)}</div>
+          <div className="grid gap-4 md:grid-cols-2">{fields.map((field) => <label key={String(field.key)} className="space-y-1.5"><span className="text-sm font-medium">{field.label}</span><input className={fieldClass} value={String(company[field.key] ?? "")} placeholder={field.placeholder} maxLength={field.maxLength} onChange={(e) => change(field.key, e.target.value)} /></label>)}</div>
           <div className="flex justify-end"><button type="button" disabled={saving} onClick={() => void saveCompany()} className="inline-flex h-10 items-center justify-center rounded-md bg-primary px-5 text-sm font-medium text-primary-foreground disabled:opacity-50">{saving ? "Salvando..." : "Salvar alterações"}</button></div>
         </div>}
       </CardContent></Card></TabsContent>
