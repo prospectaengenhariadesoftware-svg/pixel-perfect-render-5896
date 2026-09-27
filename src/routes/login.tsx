@@ -125,6 +125,9 @@ function LoginPage() {
               </>
             )}
           </Button>
+          <Button asChild type="button" variant="outline" className="w-full">
+            <a href="/cadastro">Não tenho conta</a>
+          </Button>
         </form>
       </Form>
 

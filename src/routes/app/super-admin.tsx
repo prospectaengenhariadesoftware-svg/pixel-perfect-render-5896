@@ -413,8 +413,10 @@ function SuperAdminPage() {
     const supabase = getSupabase();
     if (!supabase) return;
     const kind = documentKind(tenantForm.document);
-    if (!tenantForm.name.trim() || !tenantForm.slug.trim() || !tenantForm.ownerEmail.trim()) {
-      toast.error("Preencha empresa, slug e e-mail do dono.");
+    const ownerContacts = tenantForm.owners.filter((owner) => owner.name.trim());
+    const accessOwner = ownerContacts.find((owner) => owner.email.trim());
+    if (!tenantForm.name.trim() || !tenantForm.slug.trim()) {
+      toast.error("Preencha empresa e slug.");
       return;
     }
     if (!kind) {
@@ -425,8 +427,12 @@ function SuperAdminPage() {
       toast.error("Informe CEP e número do endereço.");
       return;
     }
-    if (kind === "cnpj" && tenantForm.owners.filter((owner) => owner.name.trim()).length === 0) {
-      toast.error("Informe pelo menos um proprietário/sócio do CNPJ.");
+    if (ownerContacts.length === 0) {
+      toast.error("Informe pelo menos um proprietário/responsável.");
+      return;
+    }
+    if (!accessOwner) {
+      toast.error("Informe o e-mail de pelo menos um proprietário/sócio para ser o dono do acesso.");
       return;
     }
     const companyData = {
@@ -443,14 +449,14 @@ function SuperAdminPage() {
       neighborhood: tenantForm.neighborhood.trim(),
       city: tenantForm.city.trim(),
       state: tenantForm.state.trim().toUpperCase(),
-      owners: kind === "cnpj" ? tenantForm.owners.filter((owner) => owner.name.trim()) : [],
+      owners: ownerContacts,
     };
     setSavingKey("tenant:create");
     try {
       let { data: tenantId, error: rpcError } = await supabase.rpc("create_tenant", {
         _name: tenantForm.name.trim(),
         _slug: tenantForm.slug.trim(),
-        _owner_email: tenantForm.ownerEmail.trim(),
+        _owner_email: accessOwner.email.trim(),
         _modules: tenantForm.modules,
         _company_data: companyData,
       });
@@ -466,7 +472,7 @@ function SuperAdminPage() {
         const fallback = await supabase.rpc("create_tenant", {
           _name: tenantForm.name.trim(),
           _slug: tenantForm.slug.trim(),
-          _owner_email: tenantForm.ownerEmail.trim(),
+          _owner_email: accessOwner.email.trim(),
           _modules: tenantForm.modules,
         });
         tenantId = fallback.data;
@@ -832,8 +838,8 @@ function SuperAdminPage() {
           <DialogHeader>
             <DialogTitle>Nova empresa cliente</DialogTitle>
             <DialogDescription>
-              O e-mail do dono precisa existir no Supabase Auth. O sistema vincula o dono, cria a
-              empresa e libera os módulos selecionados.
+              O sistema cria a empresa, grava os dados completos e usa o e-mail informado em
+              Proprietários / sócios como dono do primeiro acesso.
             </DialogDescription>
           </DialogHeader>
           <div className="grid max-h-[70vh] gap-4 overflow-y-auto py-2 pr-1">
@@ -914,35 +920,15 @@ function SuperAdminPage() {
                   placeholder="cliente-engenharia"
                 />
               </div>
-              <div className="grid gap-2">
-                <Label htmlFor="tenant-email">E-mail da empresa</Label>
-                <Input
-                  id="tenant-email"
-                  type="email"
-                  value={tenantForm.email}
-                  onChange={(event) => updateTenantForm("email", event.target.value)}
-                  placeholder="contato@cliente.com.br"
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="tenant-phone">Telefone</Label>
-                <Input
-                  id="tenant-phone"
-                  value={tenantForm.phone}
-                  inputMode="tel"
-                  onChange={(event) => updateTenantForm("phone", maskPhone(event.target.value))}
-                  placeholder="(00) 00000-0000"
-                />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="tenant-owner">E-mail do dono do acesso</Label>
-                <Input
-                  id="tenant-owner"
-                  type="email"
-                  value={tenantForm.ownerEmail}
-                  onChange={(event) => updateTenantForm("ownerEmail", event.target.value)}
-                  placeholder="dono@cliente.com.br"
-                />
+              <div className="grid gap-2 sm:col-span-2">
+                <Label>Contato da empresa</Label>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <Input value={tenantForm.email || "E-mail não informado na Receita"} readOnly className="bg-muted" />
+                  <Input value={tenantForm.phone || "Telefone não informado na Receita"} readOnly className="bg-muted" />
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Para CNPJ, e-mail e telefone vêm da Receita/BrasilAPI quando disponíveis.
+                </p>
               </div>
             </div>
 
@@ -1012,13 +998,12 @@ function SuperAdminPage() {
               </div>
             </div>
 
-            {tenantForm.personType === "pj" ? (
-              <div className="rounded-lg border p-3">
+            <div className="rounded-lg border p-3">
                 <div className="flex items-center justify-between gap-3">
                   <div>
                     <p className="text-sm font-semibold">Proprietários / sócios</p>
                     <p className="text-xs text-muted-foreground">
-                      Nome e função podem vir da Receita; confirme telefone e e-mail.
+                      Nome e função podem vir da Receita; o primeiro com e-mail será o dono do acesso.
                     </p>
                   </div>
                   <Button
@@ -1082,7 +1067,6 @@ function SuperAdminPage() {
                   ))}
                 </div>
               </div>
-            ) : null}
             <div className="grid gap-2">
               <Label>Módulos contratados</Label>
               <div className="grid gap-2 rounded-lg border p-3 sm:grid-cols-2">
