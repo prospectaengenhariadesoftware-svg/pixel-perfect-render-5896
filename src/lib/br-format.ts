@@ -28,12 +28,16 @@ export function maskCep(value: string) {
 }
 
 export function maskPhone(value: string) {
-  const rawDigits = onlyDigits(value);
-  const digits = (
-    rawDigits.startsWith("55") && rawDigits.length > 11 ? rawDigits.slice(2) : rawDigits
-  ).slice(0, 11);
-  if (!digits) return "";
+  let digits = onlyDigits(value);
 
+  // O DDI +55 pertence à máscara, não ao número digitado pelo usuário.
+  // Remove qualquer repetição inicial de 55 para impedir +55 +55.
+  while (digits.startsWith("55") && digits.length > 11) {
+    digits = digits.slice(2);
+  }
+  digits = digits.slice(0, 11);
+
+  if (!digits) return "";
   const ddd = digits.slice(0, 2);
   const local = digits.slice(2);
   if (digits.length <= 2) return `+55 (${ddd}`;
