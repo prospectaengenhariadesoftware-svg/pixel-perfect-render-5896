@@ -13,9 +13,9 @@ import { getSupabase, isSupabaseConfigured } from "@/lib/supabase";
 
 /**
  * Estado do tenant do usuário logado.
- * O tenant vem SEMPRE de `tenant_users` (filtrado por RLS para o próprio
- * usuário) — nunca da URL. Módulos ativos vêm de `tenant_modules`.
- * Esta camada só controla a interface; a proteção real é o RLS no banco.
+ * Usuários comuns obtêm o tenant de `tenant_users`, sempre protegido por RLS.
+ * Super admins são identificados exclusivamente pela RPC `is_platform_admin`
+ * e podem operar a plataforma mesmo sem vínculo com um tenant específico.
  */
 export interface AuditEntry {
   id: string;
@@ -61,16 +61,30 @@ export function TenantProvider({ children }: { children: ReactNode }) {
     const supabase = getSupabase();
     if (!supabase) return;
     let cancelled = false;
+
     (async () => {
       setStatus("loading");
-      const { data: userData } = await supabase.auth.getUser();
+      setError(null);
+      setTenant(null);
+      setActive([]);
+      setIsPlatformAdmin(false);
+
+      const { data: userData, error: userError } = await supabase.auth.getUser();
       if (cancelled) return;
+      if (userError) {
+        setUser(null);
+        setError(userError.message);
+        return setStatus("error");
+      }
+
       setUser(userData.user);
       if (!userData.user) return setStatus("no-tenant");
 
       const { data: adminData, error: adminErr } = await supabase.rpc("is_platform_admin");
       if (cancelled) return;
-      if (!adminErr) setIsPlatformAdmin(Boolean(adminData));
+
+      const platformAdmin = !adminErr && Boolean(adminData);
+      setIsPlatformAdmin(platformAdmin);
 
       const { data: memberships, error: mErr } = await supabase
         .from("tenant_users")
@@ -79,10 +93,16 @@ export function TenantProvider({ children }: { children: ReactNode }) {
         .eq("status", "ativo")
         .limit(1);
       if (cancelled) return;
+
       if (mErr) {
+        if (platformAdmin) {
+          setStatus("ready");
+          return;
+        }
         setError(mErr.message);
         return setStatus("error");
       }
+
       const m = memberships?.[0] as
         | {
             tenant_id: string;
@@ -90,7 +110,15 @@ export function TenantProvider({ children }: { children: ReactNode }) {
             tenants: { name: string } | { name: string }[] | null;
           }
         | undefined;
-      if (!m) return setStatus("no-tenant");
+
+      if (!m) {
+        if (platformAdmin) {
+          setStatus("ready");
+          return;
+        }
+        return setStatus("no-tenant");
+      }
+
       const t = Array.isArray(m.tenants) ? m.tenants[0] : m.tenants;
       setTenant({ id: m.tenant_id, name: t?.name ?? "Empresa", isOwner: m.is_owner });
 
@@ -100,14 +128,22 @@ export function TenantProvider({ children }: { children: ReactNode }) {
         .eq("tenant_id", m.tenant_id)
         .eq("enabled", true);
       if (cancelled) return;
+
       if (modErr) {
+        if (platformAdmin) {
+          setActive(["dashboard"]);
+          setStatus("ready");
+          return;
+        }
         setError(modErr.message);
         return setStatus("error");
       }
+
       const keys = (mods ?? []).map((r) => r.module_key as ModuleKey);
       setActive(Array.from(new Set<ModuleKey>(["dashboard", ...keys])));
       setStatus("ready");
     })();
+
     return () => {
       cancelled = true;
     };
