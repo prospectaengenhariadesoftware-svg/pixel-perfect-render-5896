@@ -156,9 +156,13 @@ type StatusFilter = "todas" | "ativo" | "bloqueado";
 const money = (value: number | string) =>
   Number(value ?? 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 const dateTime = (value?: string | null) => (value ? new Date(value).toLocaleString("pt-BR") : "—");
-const dateShort = (value?: string | null) => (value ? new Date(value).toLocaleDateString("pt-BR") : "—");
+const dateShort = (value?: string | null) =>
+  value ? new Date(value).toLocaleDateString("pt-BR") : "—";
 const compact = (values: Array<string | null | undefined>, fallback = "—") =>
-  values.map((value) => value?.trim()).filter(Boolean).join("/") || fallback;
+  values
+    .map((value) => value?.trim())
+    .filter(Boolean)
+    .join("/") || fallback;
 
 const emptyOwner = (): OwnerContact => ({
   name: "",
@@ -227,7 +231,9 @@ function tenantMonthlyTotal(tenant: AdminTenant) {
 }
 
 function ownerContactsFromTenant(tenant: AdminTenant) {
-  const owners = ensureArray<OwnerContact>(tenant.owner_contacts).filter((owner) => owner.name.trim());
+  const owners = ensureArray<OwnerContact>(tenant.owner_contacts).filter((owner) =>
+    owner.name.trim(),
+  );
   return owners.length ? owners : [emptyOwner()];
 }
 
@@ -238,7 +244,8 @@ function tenantToForm(tenant: AdminTenant): TenantForm {
     slug: tenant.slug,
     status: tenant.status,
     ownerEmail: tenant.users.find((user) => user.is_owner)?.email ?? "",
-    personType: company.personType ?? (onlyDigits(company.document ?? "").length === 11 ? "pf" : "pj"),
+    personType:
+      company.personType ?? (onlyDigits(company.document ?? "").length === 11 ? "pf" : "pj"),
     legalName: company.legalName ?? "",
     document: company.document ?? "",
     email: company.email ?? "",
@@ -332,7 +339,9 @@ function SuperAdminPage() {
         setOverview(normalizeOverview(data));
       }
     } catch (loadError) {
-      setError(loadError instanceof Error ? loadError.message : "Falha inesperada ao carregar empresas.");
+      setError(
+        loadError instanceof Error ? loadError.message : "Falha inesperada ao carregar empresas.",
+      );
       setOverview(null);
     } finally {
       setLoading(false);
@@ -375,7 +384,14 @@ function SuperAdminPage() {
         (statusFilter === "bloqueado" && tenant.status === "inativo");
       if (!statusMatches) return false;
       if (!query) return true;
-      const haystack = [tenant.name, tenant.slug, company.legalName, company.document, company.city, company.state]
+      const haystack = [
+        tenant.name,
+        tenant.slug,
+        company.legalName,
+        company.document,
+        company.city,
+        company.state,
+      ]
         .join(" ")
         .toLowerCase();
       const documentDigits = onlyDigits(company.document ?? "");
@@ -608,7 +624,8 @@ function SuperAdminPage() {
       await load();
     } catch (createError) {
       toast.error("Não foi possível criar a empresa", {
-        description: createError instanceof Error ? createError.message : "Falha inesperada no cadastro.",
+        description:
+          createError instanceof Error ? createError.message : "Falha inesperada no cadastro.",
       });
     } finally {
       setSavingKey(null);
@@ -696,12 +713,15 @@ function SuperAdminPage() {
         _tenant: tenant.id,
       });
       if (rpcError) {
-        toast.error("Não foi possível excluir/inativar a empresa", { description: rpcError.message });
+        toast.error("Não foi possível excluir/inativar a empresa", {
+          description: rpcError.message,
+        });
         return;
       }
       const result = data as { reason?: string } | null;
       toast.success("Empresa inativada com segurança", {
-        description: result?.reason ?? "Exclusão física bloqueada para preservar vínculos e auditoria.",
+        description:
+          result?.reason ?? "Exclusão física bloqueada para preservar vínculos e auditoria.",
       });
       setSelectedTenantId(null);
       await load();
@@ -854,7 +874,9 @@ function SuperAdminPage() {
 
           {filteredTenants.length === 0 ? (
             <EmptyState
-              title={tenants.length === 0 ? "Nenhuma empresa cadastrada" : "Nenhuma empresa encontrada"}
+              title={
+                tenants.length === 0 ? "Nenhuma empresa cadastrada" : "Nenhuma empresa encontrada"
+              }
               description={
                 tenants.length === 0
                   ? "Clique em Nova empresa para cadastrar o primeiro cliente."
@@ -876,7 +898,8 @@ function SuperAdminPage() {
                     className="cursor-pointer shadow-card transition hover:-translate-y-0.5 hover:shadow-lg"
                     onClick={() => setSelectedTenantId(tenant.id)}
                     onKeyDown={(event) => {
-                      if (event.key === "Enter" || event.key === " ") setSelectedTenantId(tenant.id);
+                      if (event.key === "Enter" || event.key === " ")
+                        setSelectedTenantId(tenant.id);
                     }}
                   >
                     <CardHeader className="space-y-3 pb-3">
@@ -962,7 +985,9 @@ function SuperAdminPage() {
         onSubmit={() => void updateTenant()}
         updateForm={updateEditForm}
         updateOwner={updateEditOwner}
-        addOwner={() => setEditForm((current) => ({ ...current, owners: [...current.owners, emptyOwner()] }))}
+        addOwner={() =>
+          setEditForm((current) => ({ ...current, owners: [...current.owners, emptyOwner()] }))
+        }
         removeOwner={(index) =>
           setEditForm((current) => ({
             ...current,
@@ -974,7 +999,10 @@ function SuperAdminPage() {
         showStatus
       />
 
-      <Dialog open={Boolean(selectedTenant)} onOpenChange={(open) => !open && setSelectedTenantId(null)}>
+      <Dialog
+        open={Boolean(selectedTenant)}
+        onOpenChange={(open) => !open && setSelectedTenantId(null)}
+      >
         <DialogContent className="max-w-5xl">
           {selectedTenant ? (
             <TenantDetail
@@ -1109,16 +1137,21 @@ function TenantFormDialog({
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="grid gap-2">
-              <Label htmlFor={`${title}-document`}>{form.personType === "pj" ? "CNPJ" : "CPF"}</Label>
+              <Label htmlFor={`${title}-document`}>
+                {form.personType === "pj" ? "CNPJ" : "CPF"}
+              </Label>
               <Input
                 id={`${title}-document`}
                 value={form.document}
                 inputMode="numeric"
                 onChange={(event) => {
                   const document =
-                    form.personType === "pj" ? maskCnpj(event.target.value) : maskCpf(event.target.value);
+                    form.personType === "pj"
+                      ? maskCnpj(event.target.value)
+                      : maskCpf(event.target.value);
                   updateForm("document", document);
-                  if (form.personType === "pj" && onlyDigits(document).length === 14) lookupCnpj(document);
+                  if (form.personType === "pj" && onlyDigits(document).length === 14)
+                    lookupCnpj(document);
                 }}
                 placeholder={form.personType === "pj" ? "00.000.000/0000-00" : "000.000.000-00"}
               />
@@ -1195,7 +1228,8 @@ function TenantFormDialog({
           <div className="rounded-lg border p-3">
             <p className="text-sm font-semibold">Endereço</p>
             <p className="text-xs text-muted-foreground">
-              Digite o CEP para preencher rua, bairro, cidade e UF. Preencha manualmente apenas número e complemento.
+              Digite o CEP para preencher rua, bairro, cidade e UF. Preencha manualmente apenas
+              número e complemento.
             </p>
             <div className="mt-3 grid gap-4 sm:grid-cols-2">
               <div className="grid gap-2">
@@ -1226,7 +1260,12 @@ function TenantFormDialog({
               </div>
               <div className="grid gap-2">
                 <Label htmlFor={`${title}-neighborhood`}>Bairro</Label>
-                <Input id={`${title}-neighborhood`} value={form.neighborhood} readOnly className="bg-muted" />
+                <Input
+                  id={`${title}-neighborhood`}
+                  value={form.neighborhood}
+                  readOnly
+                  className="bg-muted"
+                />
               </div>
               <div className="grid gap-2">
                 <Label htmlFor={`${title}-city`}>Cidade</Label>
@@ -1252,7 +1291,8 @@ function TenantFormDialog({
               <div>
                 <p className="text-sm font-semibold">Responsáveis / sócios</p>
                 <p className="text-xs text-muted-foreground">
-                  Responsável da empresa não precisa ser usuário autenticado. O +55 é aplicado automaticamente ao telefone.
+                  Responsável da empresa não precisa ser usuário autenticado. O +55 é aplicado
+                  automaticamente ao telefone.
                 </p>
               </div>
               <Button variant="outline" size="sm" onClick={addOwner}>
@@ -1261,7 +1301,10 @@ function TenantFormDialog({
             </div>
             <div className="mt-3 space-y-3">
               {form.owners.map((owner, index) => (
-                <div key={`${owner.id ?? "owner"}-${index}`} className="grid gap-3 rounded-lg border bg-muted/30 p-3 sm:grid-cols-2">
+                <div
+                  key={`${owner.id ?? "owner"}-${index}`}
+                  className="grid gap-3 rounded-lg border bg-muted/30 p-3 sm:grid-cols-2"
+                >
                   <Input
                     value={owner.name}
                     onChange={(event) => updateOwner(index, "name", event.target.value)}
@@ -1317,13 +1360,16 @@ function TenantFormDialog({
                     }
                   />
                   <span>{mod.name}</span>
-                  <span className="text-xs text-muted-foreground">{money(mod.monthly_price)}/mês</span>
+                  <span className="text-xs text-muted-foreground">
+                    {money(mod.monthly_price)}/mês
+                  </span>
                 </label>
               ))}
             </div>
             {showStatus ? (
               <p className="text-xs text-muted-foreground">
-                Alterações de módulos já contratados continuam sendo feitas na seção “Módulos contratados” do detalhe da empresa.
+                Alterações de módulos já contratados continuam sendo feitas na seção “Módulos
+                contratados” do detalhe da empresa.
               </p>
             ) : null}
           </div>
@@ -1392,11 +1438,19 @@ function TenantDetail({
               disabled={statusSaving}
               onClick={() => onSetStatus(nextStatus)}
             >
-              {statusSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Power className="mr-2 h-4 w-4" />}
+              {statusSaving ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Power className="mr-2 h-4 w-4" />
+              )}
               {nextStatus === "ativo" ? "Desbloquear" : "Bloquear"}
             </Button>
             <Button variant="destructive" size="sm" disabled={archiveSaving} onClick={onArchive}>
-              {archiveSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+              {archiveSaving ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Trash2 className="mr-2 h-4 w-4" />
+              )}
               Excluir
             </Button>
           </div>
@@ -1425,16 +1479,23 @@ function TenantDetail({
           {tenant.owner_contacts?.length ? (
             <div className="grid gap-3 md:grid-cols-2">
               {tenant.owner_contacts.map((owner) => (
-                <div key={owner.id ?? `${owner.name}-${owner.email}`} className="rounded-lg border bg-muted/30 p-3 text-sm">
+                <div
+                  key={owner.id ?? `${owner.name}-${owner.email}`}
+                  className="rounded-lg border bg-muted/30 p-3 text-sm"
+                >
                   <p className="font-semibold">{owner.name}</p>
-                  <p className="text-muted-foreground">{owner.function || "Função não informada"}</p>
+                  <p className="text-muted-foreground">
+                    {owner.function || "Função não informada"}
+                  </p>
                   <p>{owner.phone || "Telefone não informado"}</p>
                   <p>{owner.email || "E-mail não informado"}</p>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">Sem responsáveis cadastrados.</p>
+            <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+              Sem responsáveis cadastrados.
+            </p>
           )}
         </Section>
 
@@ -1442,7 +1503,10 @@ function TenantDetail({
           <div className="space-y-2">
             {tenant.users.length ? (
               tenant.users.map((user) => (
-                <div key={user.id} className="flex items-center justify-between rounded-lg border bg-muted/30 px-3 py-2 text-sm">
+                <div
+                  key={user.id}
+                  className="flex items-center justify-between rounded-lg border bg-muted/30 px-3 py-2 text-sm"
+                >
                   <div className="min-w-0">
                     <p className="truncate font-medium">{user.email ?? user.user_id}</p>
                     <p className="text-xs text-muted-foreground">{user.user_id}</p>
@@ -1454,7 +1518,9 @@ function TenantDetail({
                 </div>
               ))
             ) : (
-              <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">Sem usuários vinculados.</p>
+              <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+                Sem usuários vinculados.
+              </p>
             )}
           </div>
         </Section>
@@ -1464,15 +1530,25 @@ function TenantDetail({
             {tenant.modules.map((mod) => {
               const saving = savingKey === `${tenant.id}:${mod.key}`;
               return (
-                <div key={mod.key} className="flex items-center justify-between gap-3 rounded-lg border bg-card p-3">
+                <div
+                  key={mod.key}
+                  className="flex items-center justify-between gap-3 rounded-lg border bg-card p-3"
+                >
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
                       <p className="truncate text-sm font-semibold">{mod.name}</p>
                       {mod.is_core && <Badge variant="secondary">Base</Badge>}
-                      {mod.enabled ? <Badge className="bg-success text-success-foreground">Ativo</Badge> : <Badge variant="outline">Bloqueado</Badge>}
+                      {mod.enabled ? (
+                        <Badge className="bg-success text-success-foreground">Ativo</Badge>
+                      ) : (
+                        <Badge variant="outline">Bloqueado</Badge>
+                      )}
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      {mod.is_core ? "Incluso" : `${money(mod.monthly_price)}/mês`} · {mod.enabled_at ? `liberado em ${dateTime(mod.enabled_at)}` : "sem liberação registrada"}
+                      {mod.is_core ? "Incluso" : `${money(mod.monthly_price)}/mês`} ·{" "}
+                      {mod.enabled_at
+                        ? `liberado em ${dateTime(mod.enabled_at)}`
+                        : "sem liberação registrada"}
                     </p>
                   </div>
                   {saving ? (
@@ -1494,14 +1570,19 @@ function TenantDetail({
         <Section title="Status da empresa">
           <div className="grid gap-3 text-sm sm:grid-cols-3">
             <Info label="Status atual" value={tenant.status} />
-            <Info label="Módulos ativos" value={`${enabledModules(tenant)}/${tenant.modules.length}`} />
+            <Info
+              label="Módulos ativos"
+              value={`${enabledModules(tenant)}/${tenant.modules.length}`}
+            />
             <Info label="Valor mensal ativo" value={`${money(tenantMonthlyTotal(tenant))}/mês`} />
           </div>
           <Alert className="mt-3">
             <ShieldCheck className="h-4 w-4" />
             <AlertTitle>Exclusão protegida</AlertTitle>
             <AlertDescription>
-              O botão Excluir inativa a empresa com auditoria. A exclusão física não é executada automaticamente porque o tenant possui vínculos com usuários, módulos, responsáveis e histórico.
+              O botão Excluir inativa a empresa com auditoria. A exclusão física não é executada
+              automaticamente porque o tenant possui vínculos com usuários, módulos, responsáveis e
+              histórico.
             </AlertDescription>
           </Alert>
         </Section>
@@ -1513,13 +1594,19 @@ function TenantDetail({
                 <div key={log.id} className="rounded-lg border bg-muted/30 px-3 py-2 text-sm">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <p className="font-medium">{log.action}</p>
-                    <span className="text-xs text-muted-foreground">{dateTime(log.created_at)}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {dateTime(log.created_at)}
+                    </span>
                   </div>
-                  <p className="text-xs text-muted-foreground">{log.module_key ?? "plataforma"} · {log.entity ?? "registro"}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {log.module_key ?? "plataforma"} · {log.entity ?? "registro"}
+                  </p>
                 </div>
               ))
             ) : (
-              <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">Sem auditoria recente.</p>
+              <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+                Sem auditoria recente.
+              </p>
             )}
           </div>
         </Section>
@@ -1531,7 +1618,9 @@ function TenantDetail({
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="rounded-xl border bg-card p-4">
-      <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">{title}</h3>
+      <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+        {title}
+      </h3>
       {children}
     </div>
   );

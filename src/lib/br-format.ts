@@ -29,7 +29,9 @@ export function maskCep(value: string) {
 
 export function maskPhone(value: string) {
   const rawDigits = onlyDigits(value);
-  const digits = (rawDigits.startsWith("55") && rawDigits.length > 11 ? rawDigits.slice(2) : rawDigits).slice(0, 11);
+  const digits = (
+    rawDigits.startsWith("55") && rawDigits.length > 11 ? rawDigits.slice(2) : rawDigits
+  ).slice(0, 11);
   if (!digits) return "";
 
   const ddd = digits.slice(0, 2);

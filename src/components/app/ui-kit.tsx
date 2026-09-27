@@ -23,7 +23,14 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import type { AuditEntry } from "@/lib/tenant-context";
 import { cn } from "@/lib/utils";
 
@@ -45,14 +52,26 @@ export function PageHeader({
           <p className="text-xs font-semibold tracking-widest text-primary uppercase">{eyebrow}</p>
         )}
         <h1 className="mt-1 text-3xl font-semibold">{title}</h1>
-        {description && <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{description}</p>}
+        {description && (
+          <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{description}</p>
+        )}
       </div>
       {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
     </div>
   );
 }
 
-export function StatCard({ label, value, hint, icon: Icon }: { label: string; value: string; hint?: string; icon: LucideIcon }) {
+export function StatCard({
+  label,
+  value,
+  hint,
+  icon: Icon,
+}: {
+  label: string;
+  value: string;
+  hint?: string;
+  icon: LucideIcon;
+}) {
   return (
     <Card className="bg-gradient-surface shadow-card border-border/70">
       <CardContent className="p-5">
@@ -78,7 +97,10 @@ const statusTone: Record<string, string> = {
 
 export function StatusBadge({ status }: { status: string }) {
   return (
-    <Badge variant="outline" className={cn("capitalize", statusTone[status] ?? statusTone["pendente"])}>
+    <Badge
+      variant="outline"
+      className={cn("capitalize", statusTone[status] ?? statusTone["pendente"])}
+    >
       {status}
     </Badge>
   );
@@ -115,11 +137,24 @@ export function LoadingState({ label = "Carregando..." }: { label?: string }) {
   );
 }
 
-export function FilterBar({ value, onChange, placeholder = "Filtrar..." }: { value: string; onChange: (v: string) => void; placeholder?: string }) {
+export function FilterBar({
+  value,
+  onChange,
+  placeholder = "Filtrar...",
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+}) {
   return (
     <div className="relative max-w-xs">
       <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-      <Input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className="h-9 pl-9" />
+      <Input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="h-9 pl-9"
+      />
     </div>
   );
 }
@@ -131,14 +166,22 @@ export interface Column<T> {
   className?: string;
 }
 
-export function DataTable<T extends { id: string }>({ columns, rows }: { columns: Column<T>[]; rows: T[] }) {
+export function DataTable<T extends { id: string }>({
+  columns,
+  rows,
+}: {
+  columns: Column<T>[];
+  rows: T[];
+}) {
   return (
     <div className="overflow-x-auto rounded-lg border border-border bg-card">
       <Table>
         <TableHeader>
           <TableRow>
             {columns.map((c) => (
-              <TableHead key={c.key} className={c.className}>{c.header}</TableHead>
+              <TableHead key={c.key} className={c.className}>
+                {c.header}
+              </TableHead>
             ))}
           </TableRow>
         </TableHeader>
@@ -146,7 +189,9 @@ export function DataTable<T extends { id: string }>({ columns, rows }: { columns
           {rows.map((r) => (
             <TableRow key={r.id}>
               {columns.map((c) => (
-                <TableCell key={c.key} className={c.className}>{c.render(r)}</TableCell>
+                <TableCell key={c.key} className={c.className}>
+                  {c.render(r)}
+                </TableCell>
               ))}
             </TableRow>
           ))}
@@ -219,7 +264,9 @@ export function FormModal({
       setError(`Preencha o campo "${missing.label}".`);
       return;
     }
-    onSubmit(Object.fromEntries(Object.entries(values).map(([k, v]) => [k, v.trim().slice(0, 200)])));
+    onSubmit(
+      Object.fromEntries(Object.entries(values).map(([k, v]) => [k, v.trim().slice(0, 200)])),
+    );
     setValues({});
     setError(null);
     onOpenChange(false);
@@ -235,7 +282,10 @@ export function FormModal({
           </DialogHeader>
           {fields.map((f) => (
             <div key={f.name} className="space-y-1.5">
-              <Label htmlFor={f.name}>{f.label}{f.required && " *"}</Label>
+              <Label htmlFor={f.name}>
+                {f.label}
+                {f.required && " *"}
+              </Label>
               <Input
                 id={f.name}
                 placeholder={f.placeholder}
@@ -247,7 +297,9 @@ export function FormModal({
           ))}
           {error && <p className="text-sm text-destructive">{error}</p>}
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              Cancelar
+            </Button>
             <Button type="submit">Salvar</Button>
           </DialogFooter>
         </form>

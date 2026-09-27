@@ -7,7 +7,15 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { documentKind, maskCep, maskCnpj, maskCpf, maskPhone, onlyDigits, slugify } from "@/lib/br-format";
+import {
+  documentKind,
+  maskCep,
+  maskCnpj,
+  maskCpf,
+  maskPhone,
+  onlyDigits,
+  slugify,
+} from "@/lib/br-format";
 import { MODULES, type ModuleKey } from "@/lib/modules";
 import { getSupabase, isSupabaseConfigured } from "@/lib/supabase";
 
@@ -44,7 +52,12 @@ type RegisterForm = {
   confirmPassword: string;
 };
 
-const emptyOwner = (): OwnerContact => ({ name: "", phone: "", email: "", function: "Proprietário" });
+const emptyOwner = (): OwnerContact => ({
+  name: "",
+  phone: "",
+  email: "",
+  function: "Proprietário",
+});
 
 const initialForm = (): RegisterForm => ({
   personType: "pj",
@@ -85,7 +98,10 @@ function RegisterPage() {
 
   const accessOwner = useMemo(() => firstAccessOwner(form.owners), [form.owners]);
   const monthlyTotal = useMemo(
-    () => paidModules.filter((module) => form.modules.includes(module.key)).reduce((sum, module) => sum + module.monthlyPrice, 0),
+    () =>
+      paidModules
+        .filter((module) => form.modules.includes(module.key))
+        .reduce((sum, module) => sum + module.monthlyPrice, 0),
     [form.modules],
   );
 
@@ -97,7 +113,9 @@ function RegisterPage() {
     setForm((current) => ({
       ...current,
       owners: current.owners.map((owner, ownerIndex) =>
-        ownerIndex === index ? { ...owner, [field]: field === "phone" ? maskPhone(value) : value } : owner,
+        ownerIndex === index
+          ? { ...owner, [field]: field === "phone" ? maskPhone(value) : value }
+          : owner,
       ),
     }));
   }
@@ -118,7 +136,12 @@ function RegisterPage() {
     try {
       const response = await fetch(`https://brasilapi.com.br/api/cep/v2/${digits}`);
       if (!response.ok) throw new Error("CEP não localizado.");
-      const data = (await response.json()) as { street?: string; neighborhood?: string; city?: string; state?: string };
+      const data = (await response.json()) as {
+        street?: string;
+        neighborhood?: string;
+        city?: string;
+        state?: string;
+      };
       setForm((current) => ({
         ...current,
         street: data.street ?? "",
@@ -126,9 +149,13 @@ function RegisterPage() {
         city: data.city ?? "",
         state: data.state ?? "",
       }));
-      toast.success("Endereço preenchido pelo CEP", { description: "Complete apenas número e complemento." });
+      toast.success("Endereço preenchido pelo CEP", {
+        description: "Complete apenas número e complemento.",
+      });
     } catch (error) {
-      toast.error("Não foi possível buscar o CEP", { description: error instanceof Error ? error.message : undefined });
+      toast.error("Não foi possível buscar o CEP", {
+        description: error instanceof Error ? error.message : undefined,
+      });
     } finally {
       setLookingUp(null);
     }
@@ -181,9 +208,13 @@ function RegisterPage() {
         state: data.uf ?? current.state,
         owners: owners.length ? owners : current.owners,
       }));
-      toast.success("Dados da Receita preenchidos", { description: "Complete número, complemento e e-mail do sócio que fará o acesso." });
+      toast.success("Dados da Receita preenchidos", {
+        description: "Complete número, complemento e e-mail do sócio que fará o acesso.",
+      });
     } catch (error) {
-      toast.error("Não foi possível buscar o CNPJ", { description: error instanceof Error ? error.message : undefined });
+      toast.error("Não foi possível buscar o CNPJ", {
+        description: error instanceof Error ? error.message : undefined,
+      });
     } finally {
       setLookingUp(null);
     }
@@ -279,7 +310,9 @@ function RegisterPage() {
         return;
       }
 
-      toast.success("Conta criada com sucesso", { description: `${form.name.trim()} · ${formatCurrency(monthlyTotal)}/mês` });
+      toast.success("Conta criada com sucesso", {
+        description: `${form.name.trim()} · ${formatCurrency(monthlyTotal)}/mês`,
+      });
       await navigate({ to: "/app/dashboard" });
     } finally {
       setSaving(false);
@@ -287,15 +320,26 @@ function RegisterPage() {
   }
 
   return (
-    <AuthShell title="Criar conta da empresa" subtitle="Cadastre CNPJ/CPF, endereço e o primeiro responsável pelo acesso.">
+    <AuthShell
+      title="Criar conta da empresa"
+      subtitle="Cadastre CNPJ/CPF, endereço e o primeiro responsável pelo acesso."
+    >
       <div className="space-y-5">
         <div className="grid gap-3 rounded-lg border bg-muted/30 p-3 sm:grid-cols-2">
           <label className="flex items-center gap-2 text-sm font-medium">
-            <input type="radio" checked={form.personType === "pj"} onChange={() => update("personType", "pj")} />
+            <input
+              type="radio"
+              checked={form.personType === "pj"}
+              onChange={() => update("personType", "pj")}
+            />
             Pessoa jurídica / CNPJ
           </label>
           <label className="flex items-center gap-2 text-sm font-medium">
-            <input type="radio" checked={form.personType === "pf"} onChange={() => update("personType", "pf")} />
+            <input
+              type="radio"
+              checked={form.personType === "pf"}
+              onChange={() => update("personType", "pf")}
+            />
             Pessoa física / CPF
           </label>
         </div>
@@ -308,13 +352,20 @@ function RegisterPage() {
                 value={form.document}
                 inputMode="numeric"
                 onChange={(event) => {
-                  const document = form.personType === "pj" ? maskCnpj(event.target.value) : maskCpf(event.target.value);
+                  const document =
+                    form.personType === "pj"
+                      ? maskCnpj(event.target.value)
+                      : maskCpf(event.target.value);
                   setForm((current) => ({ ...current, document }));
                   if (onlyDigits(document).length === 14) void lookupCnpj(document);
                 }}
                 placeholder={form.personType === "pj" ? "00.000.000/0000-00" : "000.000.000-00"}
               />
-              {lookingUp === "cnpj" ? <Loader2 className="absolute right-3 top-2.5 h-4 w-4 animate-spin text-muted-foreground" /> : <Search className="absolute right-3 top-2.5 h-4 w-4 text-muted-foreground" />}
+              {lookingUp === "cnpj" ? (
+                <Loader2 className="absolute right-3 top-2.5 h-4 w-4 animate-spin text-muted-foreground" />
+              ) : (
+                <Search className="absolute right-3 top-2.5 h-4 w-4 text-muted-foreground" />
+              )}
             </div>
           </div>
           <div className="grid gap-2">
@@ -323,42 +374,89 @@ function RegisterPage() {
               value={form.name}
               onChange={(event) => {
                 const name = event.target.value;
-                setForm((current) => ({ ...current, name, slug: current.slug ? current.slug : slugify(name) }));
+                setForm((current) => ({
+                  ...current,
+                  name,
+                  slug: current.slug ? current.slug : slugify(name),
+                }));
               }}
             />
           </div>
           {form.personType === "pj" ? (
             <div className="grid gap-2 sm:col-span-2">
               <Label>Razão social</Label>
-              <Input value={form.legalName} onChange={(event) => update("legalName", event.target.value)} />
+              <Input
+                value={form.legalName}
+                onChange={(event) => update("legalName", event.target.value)}
+              />
             </div>
           ) : null}
           <div className="grid gap-2 sm:col-span-2">
             <Label>Slug da empresa</Label>
-            <Input value={form.slug} onChange={(event) => update("slug", slugify(event.target.value))} placeholder="minha-empresa" />
+            <Input
+              value={form.slug}
+              onChange={(event) => update("slug", slugify(event.target.value))}
+              placeholder="minha-empresa"
+            />
           </div>
         </div>
 
         <div className="rounded-lg border p-3">
           <p className="text-sm font-semibold">Contato da empresa</p>
-          <p className="text-xs text-muted-foreground">Para CNPJ, e-mail e telefone vêm da Receita/BrasilAPI quando disponíveis.</p>
+          <p className="text-xs text-muted-foreground">
+            Para CNPJ, e-mail e telefone vêm da Receita/BrasilAPI quando disponíveis.
+          </p>
           <div className="mt-3 grid gap-4 sm:grid-cols-2">
-            <Input value={form.companyEmail || "E-mail não informado na Receita"} readOnly className="bg-muted" />
-            <Input value={form.companyPhone || "Telefone não informado na Receita"} readOnly className="bg-muted" />
+            <Input
+              value={form.companyEmail || "E-mail não informado na Receita"}
+              readOnly
+              className="bg-muted"
+            />
+            <Input
+              value={form.companyPhone || "Telefone não informado na Receita"}
+              readOnly
+              className="bg-muted"
+            />
           </div>
         </div>
 
         <div className="rounded-lg border p-3">
           <p className="text-sm font-semibold">Endereço</p>
-          <p className="text-xs text-muted-foreground">Digite o CEP para preencher rua, bairro, cidade e UF. Preencha apenas número e complemento.</p>
+          <p className="text-xs text-muted-foreground">
+            Digite o CEP para preencher rua, bairro, cidade e UF. Preencha apenas número e
+            complemento.
+          </p>
           <div className="mt-3 grid gap-4 sm:grid-cols-2">
-            <Input value={form.cep} inputMode="numeric" onChange={(event) => { const cep = maskCep(event.target.value); update("cep", cep); if (onlyDigits(cep).length === 8) void lookupCep(cep); }} placeholder="00000-000" />
-            <Input value={form.number} onChange={(event) => update("number", event.target.value)} placeholder="Número" />
-            <Input value={form.street} readOnly className="bg-muted" placeholder="Rua / logradouro" />
+            <Input
+              value={form.cep}
+              inputMode="numeric"
+              onChange={(event) => {
+                const cep = maskCep(event.target.value);
+                update("cep", cep);
+                if (onlyDigits(cep).length === 8) void lookupCep(cep);
+              }}
+              placeholder="00000-000"
+            />
+            <Input
+              value={form.number}
+              onChange={(event) => update("number", event.target.value)}
+              placeholder="Número"
+            />
+            <Input
+              value={form.street}
+              readOnly
+              className="bg-muted"
+              placeholder="Rua / logradouro"
+            />
             <Input value={form.neighborhood} readOnly className="bg-muted" placeholder="Bairro" />
             <Input value={form.city} readOnly className="bg-muted" placeholder="Cidade" />
             <Input value={form.state} readOnly className="bg-muted" placeholder="UF" />
-            <Input className="sm:col-span-2" value={form.complement} onChange={(event) => update("complement", event.target.value)} placeholder="Complemento" />
+            <Input
+              className="sm:col-span-2"
+              value={form.complement}
+              onChange={(event) => update("complement", event.target.value)}
+              placeholder="Complemento"
+            />
           </div>
         </div>
 
@@ -366,17 +464,47 @@ function RegisterPage() {
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="text-sm font-semibold">Proprietários / sócios</p>
-              <p className="text-xs text-muted-foreground">O primeiro sócio com e-mail será o dono do acesso inicial.</p>
+              <p className="text-xs text-muted-foreground">
+                O primeiro sócio com e-mail será o dono do acesso inicial.
+              </p>
             </div>
-            <Button variant="outline" size="sm" onClick={() => setForm((current) => ({ ...current, owners: [...current.owners, emptyOwner()] }))}>Adicionar</Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                setForm((current) => ({ ...current, owners: [...current.owners, emptyOwner()] }))
+              }
+            >
+              Adicionar
+            </Button>
           </div>
           <div className="mt-3 space-y-3">
             {form.owners.map((owner, index) => (
-              <div key={index} className="grid gap-3 rounded-lg border bg-muted/30 p-3 sm:grid-cols-2">
-                <Input value={owner.name} onChange={(event) => updateOwner(index, "name", event.target.value)} placeholder="Nome" />
-                <Input value={owner.function} onChange={(event) => updateOwner(index, "function", event.target.value)} placeholder="Função" />
-                <Input value={owner.phone} onChange={(event) => updateOwner(index, "phone", event.target.value)} placeholder="Telefone" />
-                <Input type="email" value={owner.email} onChange={(event) => updateOwner(index, "email", event.target.value)} placeholder="E-mail do acesso" />
+              <div
+                key={index}
+                className="grid gap-3 rounded-lg border bg-muted/30 p-3 sm:grid-cols-2"
+              >
+                <Input
+                  value={owner.name}
+                  onChange={(event) => updateOwner(index, "name", event.target.value)}
+                  placeholder="Nome"
+                />
+                <Input
+                  value={owner.function}
+                  onChange={(event) => updateOwner(index, "function", event.target.value)}
+                  placeholder="Função"
+                />
+                <Input
+                  value={owner.phone}
+                  onChange={(event) => updateOwner(index, "phone", event.target.value)}
+                  placeholder="Telefone"
+                />
+                <Input
+                  type="email"
+                  value={owner.email}
+                  onChange={(event) => updateOwner(index, "email", event.target.value)}
+                  placeholder="E-mail do acesso"
+                />
               </div>
             ))}
           </div>
@@ -386,7 +514,9 @@ function RegisterPage() {
           <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <p className="text-sm font-semibold">Módulos contratados</p>
-              <p className="text-xs text-muted-foreground">Escolha agora para já deixar o valor mensal calculado quando a cobrança for ativada.</p>
+              <p className="text-xs text-muted-foreground">
+                Escolha agora para já deixar o valor mensal calculado quando a cobrança for ativada.
+              </p>
             </div>
             <div className="rounded-md bg-primary/10 px-3 py-2 text-sm font-semibold text-primary">
               Total: {formatCurrency(monthlyTotal)}/mês
@@ -394,7 +524,10 @@ function RegisterPage() {
           </div>
           <div className="mt-3 grid gap-3">
             {paidModules.map((module) => (
-              <label key={module.key} className="flex cursor-pointer items-start gap-3 rounded-lg border bg-muted/30 p-3 transition hover:bg-muted/50">
+              <label
+                key={module.key}
+                className="flex cursor-pointer items-start gap-3 rounded-lg border bg-muted/30 p-3 transition hover:bg-muted/50"
+              >
                 <Checkbox
                   checked={form.modules.includes(module.key)}
                   onCheckedChange={(checked) => toggleModule(module.key, checked === true)}
@@ -416,23 +549,50 @@ function RegisterPage() {
 
         <div className="rounded-lg border p-3">
           <p className="text-sm font-semibold">Senha do primeiro acesso</p>
-          <p className="text-xs text-muted-foreground">E-mail de login: {accessOwner?.email || "preencha o e-mail de um sócio/responsável"}</p>
+          <p className="text-xs text-muted-foreground">
+            E-mail de login: {accessOwner?.email || "preencha o e-mail de um sócio/responsável"}
+          </p>
           <div className="mt-3 grid gap-4 sm:grid-cols-2">
-            <Input type="password" value={form.password} onChange={(event) => update("password", event.target.value)} placeholder="Senha" autoComplete="new-password" />
-            <Input type="password" value={form.confirmPassword} onChange={(event) => update("confirmPassword", event.target.value)} placeholder="Confirmar senha" autoComplete="new-password" />
+            <Input
+              type="password"
+              value={form.password}
+              onChange={(event) => update("password", event.target.value)}
+              placeholder="Senha"
+              autoComplete="new-password"
+            />
+            <Input
+              type="password"
+              value={form.confirmPassword}
+              onChange={(event) => update("confirmPassword", event.target.value)}
+              placeholder="Confirmar senha"
+              autoComplete="new-password"
+            />
           </div>
         </div>
 
-        <Button className="w-full" onClick={() => void submit()} disabled={!isSupabaseConfigured || saving}>
-          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <>Criar conta <ArrowRight className="ml-1 h-4 w-4" /></>}
+        <Button
+          className="w-full"
+          onClick={() => void submit()}
+          disabled={!isSupabaseConfigured || saving}
+        >
+          {saving ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <>
+              Criar conta <ArrowRight className="ml-1 h-4 w-4" />
+            </>
+          )}
         </Button>
 
         <p className="flex items-start gap-2 rounded-md border border-border bg-secondary/50 p-3 text-xs text-muted-foreground">
-          <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-          O cadastro cria a empresa, o primeiro usuário dono e mantém os dados isolados por empresa.
+          <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" />O cadastro cria a empresa,
+          o primeiro usuário dono e mantém os dados isolados por empresa.
         </p>
         <p className="text-center text-sm text-muted-foreground">
-          Já tenho conta. <Link to="/login" className="font-medium text-primary hover:underline">Entrar</Link>
+          Já tenho conta.{" "}
+          <Link to="/login" className="font-medium text-primary hover:underline">
+            Entrar
+          </Link>
         </p>
       </div>
     </AuthShell>

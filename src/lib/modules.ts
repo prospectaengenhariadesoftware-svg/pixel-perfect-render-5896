@@ -8,13 +8,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
-export type ModuleKey =
-  | "dashboard"
-  | "empresa"
-  | "rh"
-  | "suprimentos"
-  | "obras"
-  | "financeiro";
+export type ModuleKey = "dashboard" | "empresa" | "rh" | "suprimentos" | "obras" | "financeiro";
 
 export interface ModuleDefinition {
   key: ModuleKey;
@@ -86,7 +80,11 @@ export const MODULES: ModuleDefinition[] = [
 
 /** Escopo planejado de cada módulo (exibido nas páginas iniciais). */
 export const MODULE_ROADMAP: Record<Exclude<ModuleKey, "dashboard">, string[]> = {
-  empresa: ["Dados cadastrais e CNPJ", "Filiais e unidades", "Documentos e certidões com vencimento"],
+  empresa: [
+    "Dados cadastrais e CNPJ",
+    "Filiais e unidades",
+    "Documentos e certidões com vencimento",
+  ],
   rh: ["Cadastro de colaboradores", "Cargos e departamentos", "ASO, treinamentos e documentos"],
   suprimentos: ["Requisições de compra", "Cotações e fornecedores", "Pedidos e almoxarifado"],
   obras: ["Contratos e clientes", "Medições e diários de obra", "Cronogramas e avanço físico"],

@@ -7,7 +7,10 @@ export const Route = createFileRoute("/app/obras")({
       { title: "Obras | Engenharia SaaS Modular" },
       { name: "description", content: "Contratos, medições, diários de obra e cronogramas." },
       { property: "og:title", content: "Obras | Engenharia SaaS Modular" },
-      { property: "og:description", content: "Contratos, medições, diários de obra e cronogramas." },
+      {
+        property: "og:description",
+        content: "Contratos, medições, diários de obra e cronogramas.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],

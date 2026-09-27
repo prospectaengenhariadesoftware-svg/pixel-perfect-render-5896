@@ -61,12 +61,15 @@ function ForgotPasswordPage() {
         </div>
       ) : (
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(async ({ email }) => {
+          <form
+            onSubmit={form.handleSubmit(async ({ email }) => {
               await getSupabase()?.auth.resetPasswordForEmail(email, {
                 redirectTo: `${window.location.origin}/reset-password`,
               });
               setSent(true);
-            })} className="space-y-4">
+            })}
+            className="space-y-4"
+          >
             <FormField
               control={form.control}
               name="email"
@@ -80,7 +83,11 @@ function ForgotPasswordPage() {
                 </FormItem>
               )}
             />
-            <Button type="submit" className="w-full" disabled={!isSupabaseConfigured || form.formState.isSubmitting}>
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={!isSupabaseConfigured || form.formState.isSubmitting}
+            >
               Enviar link de recuperação
             </Button>
             <Button variant="ghost" className="w-full" asChild>

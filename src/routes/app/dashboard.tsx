@@ -79,9 +79,13 @@ function Dashboard() {
                     <div className="flex items-center gap-2">
                       <p className="truncate text-sm font-semibold">{mod.name}</p>
                       {mod.core ? (
-                        <Badge variant="secondary" className="text-[10px]">Base</Badge>
+                        <Badge variant="secondary" className="text-[10px]">
+                          Base
+                        </Badge>
                       ) : active ? (
-                        <Badge className="bg-success text-[10px] text-success-foreground">Ativo</Badge>
+                        <Badge className="bg-success text-[10px] text-success-foreground">
+                          Ativo
+                        </Badge>
                       ) : (
                         <Badge variant="outline" className="gap-1 text-[10px]">
                           <Lock className="h-2.5 w-2.5" /> Não contratado

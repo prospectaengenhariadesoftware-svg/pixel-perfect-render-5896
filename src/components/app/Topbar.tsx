@@ -19,13 +19,20 @@ export function Topbar({ onOpenMenu }: { onOpenMenu: () => void }) {
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-border bg-card/85 px-4 backdrop-blur lg:px-6">
-      <Button variant="ghost" size="icon" className="lg:hidden" onClick={onOpenMenu} aria-label="Abrir menu">
+      <Button
+        variant="ghost"
+        size="icon"
+        className="lg:hidden"
+        onClick={onOpenMenu}
+        aria-label="Abrir menu"
+      >
         <Menu className="h-5 w-5" />
       </Button>
 
       <div className="flex min-w-0 flex-col">
         <span className="truncate font-display text-sm font-semibold">
-          {tenant?.name ?? (status === "unconfigured" ? "Nenhuma empresa conectada" : "Carregando empresa...")}
+          {tenant?.name ??
+            (status === "unconfigured" ? "Nenhuma empresa conectada" : "Carregando empresa...")}
         </span>
         <span className="text-xs text-muted-foreground">
           {tenant ? (tenant.isOwner ? "Administrador da empresa" : "Membro") : "—"}
@@ -42,7 +49,9 @@ export function Topbar({ onOpenMenu }: { onOpenMenu: () => void }) {
                   {initials}
                 </AvatarFallback>
               </Avatar>
-              <span className="hidden max-w-[200px] truncate text-sm font-medium sm:block">{email}</span>
+              <span className="hidden max-w-[200px] truncate text-sm font-medium sm:block">
+                {email}
+              </span>
             </div>
             <Button variant="ghost" size="icon" onClick={signOut} aria-label="Sair">
               <LogOut className="h-4 w-4" />
