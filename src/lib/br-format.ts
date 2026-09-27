@@ -30,9 +30,9 @@ export function maskCep(value: string) {
 export function maskPhone(value: string) {
   let digits = onlyDigits(value);
 
-  // O DDI +55 pertence à máscara, não ao número digitado pelo usuário.
-  // Remove qualquer repetição inicial de 55 para impedir +55 +55.
-  while (digits.startsWith("55") && digits.length > 11) {
+  // Valores já persistidos podem conter o DDI brasileiro. Internamente a
+  // máscara trabalha apenas com DDD + número e acrescenta um único +55.
+  if (digits.length > 11 && digits.startsWith("55")) {
     digits = digits.slice(2);
   }
   digits = digits.slice(0, 11);
@@ -44,6 +44,18 @@ export function maskPhone(value: string) {
   if (local.length <= 4) return `+55 (${ddd}) ${local}`;
   if (digits.length <= 10) return `+55 (${ddd}) ${local.slice(0, 4)}-${local.slice(4)}`;
   return `+55 (${ddd}) ${local.slice(0, 5)}-${local.slice(5)}`;
+}
+
+// Campo de edição com DDI +55 exibido separadamente: recebe somente DDD + número.
+export function maskNationalPhone(value: string) {
+  const digits = onlyDigits(value).slice(0, 11);
+  if (!digits) return "";
+  if (digits.length <= 2) return `(${digits}`;
+  const ddd = digits.slice(0, 2);
+  const local = digits.slice(2);
+  if (local.length <= 4) return `(${ddd}) ${local}`;
+  if (digits.length <= 10) return `(${ddd}) ${local.slice(0, 4)}-${local.slice(4)}`;
+  return `(${ddd}) ${local.slice(0, 5)}-${local.slice(5)}`;
 }
 
 export function documentKind(value: string): "cpf" | "cnpj" | null {
