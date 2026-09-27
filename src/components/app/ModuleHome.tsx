@@ -4,9 +4,21 @@ import { EmptyState, PageHeader } from "@/components/app/ui-kit";
 import { ModuleGate } from "@/components/app/ModuleGate";
 import { getModule, MODULE_ROADMAP, type ModuleKey } from "@/lib/modules";
 
+// Empresa: quando o módulo for 'empresa' renderizamos o componente específico
+import { EmpresaModule } from "@/components/modules/empresa/EmpresaModule";
+
 /** Página inicial de um módulo: escopo planejado, sem dados inventados. */
 export function ModuleHome({ module }: { module: Exclude<ModuleKey, "dashboard"> }) {
   const mod = getModule(module);
+  // se for o módulo empresa, renderiza a área implementada
+  if (module === "empresa") {
+    return (
+      <ModuleGate module={module}>
+        <EmpresaModule />
+      </ModuleGate>
+    );
+  }
+
   return (
     <ModuleGate module={module}>
       <div className="mx-auto w-full max-w-6xl space-y-6">
