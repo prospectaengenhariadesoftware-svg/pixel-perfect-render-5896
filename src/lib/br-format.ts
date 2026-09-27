@@ -28,16 +28,21 @@ export function maskCep(value: string) {
 }
 
 export function maskPhone(value: string) {
+  const hasBrazilDdi = /^\s*\+\s*55/.test(value);
   let digits = onlyDigits(value);
 
-  // Valores já persistidos podem conter o DDI brasileiro. Internamente a
-  // máscara trabalha apenas com DDD + número e acrescenta um único +55.
-  if (digits.length > 11 && digits.startsWith("55")) {
+  // Se o valor exibido já contém +55, retire o DDI antes de formatar.
+  // Assim o estado editável contém efetivamente DDD + número e nunca duplica o DDI.
+  if (hasBrazilDdi && digits.startsWith("55")) {
+    digits = digits.slice(2);
+  } else if (digits.length > 11 && digits.startsWith("55")) {
+    // Compatibilidade com valores persistidos como 55DDDNÚMERO, sem o sinal +.
     digits = digits.slice(2);
   }
-  digits = digits.slice(0, 11);
 
+  digits = digits.slice(0, 11);
   if (!digits) return "";
+
   const ddd = digits.slice(0, 2);
   const local = digits.slice(2);
   if (digits.length <= 2) return `+55 (${ddd}`;
@@ -46,7 +51,6 @@ export function maskPhone(value: string) {
   return `+55 (${ddd}) ${local.slice(0, 5)}-${local.slice(5)}`;
 }
 
-// Campo de edição com DDI +55 exibido separadamente: recebe somente DDD + número.
 export function maskNationalPhone(value: string) {
   const digits = onlyDigits(value).slice(0, 11);
   if (!digits) return "";
