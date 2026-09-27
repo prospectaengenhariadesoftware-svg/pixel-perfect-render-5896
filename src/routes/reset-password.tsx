@@ -39,14 +39,25 @@ function ResetPasswordPage() {
   }
 
   return (
-    <AuthShell title="Definir nova senha" subtitle="Escolha uma senha forte com ao menos 8 caracteres.">
+    <AuthShell
+      title="Definir nova senha"
+      subtitle="Escolha uma senha forte com ao menos 8 caracteres."
+    >
       <form onSubmit={onSubmit} className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="pw">Nova senha</Label>
-          <Input id="pw" type="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} />
+          <Input
+            id="pw"
+            type="password"
+            autoComplete="new-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
         </div>
         {error && <p className="text-sm font-medium text-destructive">{error}</p>}
-        <Button type="submit" className="w-full" disabled={busy}>Salvar nova senha</Button>
+        <Button type="submit" className="w-full" disabled={busy}>
+          Salvar nova senha
+        </Button>
       </form>
     </AuthShell>
   );

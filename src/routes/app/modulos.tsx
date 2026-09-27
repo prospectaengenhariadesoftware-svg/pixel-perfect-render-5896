@@ -44,14 +44,18 @@ function ModulosPage() {
                     <span className="flex h-10 w-10 items-center justify-center rounded-md bg-accent/60 text-accent-foreground">
                       <Icon className="h-5 w-5" />
                     </span>
-                    {ready && <StatusBadge status={m.core ? "incluso" : on ? "ativo" : "inativo"} />}
+                    {ready && (
+                      <StatusBadge status={m.core ? "incluso" : on ? "ativo" : "inativo"} />
+                    )}
                   </div>
                   <div>
                     <p className="font-display font-semibold">{m.name}</p>
                     <p className="text-sm text-muted-foreground">{m.description}</p>
                   </div>
                   <div className="flex items-center justify-between text-sm">
-                    <span className="font-medium">{m.core ? "Incluso" : `${brl(m.monthlyPrice)}/mês`}</span>
+                    <span className="font-medium">
+                      {m.core ? "Incluso" : `${brl(m.monthlyPrice)}/mês`}
+                    </span>
                     {on && (
                       <Button asChild variant="link" size="sm" className="h-auto p-0">
                         <Link to={m.path}>Abrir</Link>
@@ -64,7 +68,9 @@ function ModulosPage() {
           })}
         </div>
         <Card className="h-fit">
-          <CardHeader><CardTitle className="text-base">Resumo</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle className="text-base">Resumo</CardTitle>
+          </CardHeader>
           <CardContent className="space-y-1 text-sm">
             {ready ? (
               <p className="font-display text-2xl font-semibold">{brl(total)}/mês</p>
