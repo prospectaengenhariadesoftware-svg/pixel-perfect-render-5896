@@ -8,13 +8,33 @@ import { getSupabase } from "@/lib/supabase";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 
 export const Route = createFileRoute("/app")({
-  // A sessão fica no navegador; o servidor não a enxerga.
+  // A sessão do Supabase é persistida no navegador. Esta rota não deve ser
+  // validada no servidor porque localStorage/cookies do cliente ainda não estão
+  // disponíveis durante SSR.
   ssr: false,
   beforeLoad: async () => {
     const supabase = getSupabase();
-    if (!supabase) return; // sem conexão configurada: modo de configuração, sem dados
+    if (!supabase) return; // modo de configuração, sem dados
+
+    // No refresh, restaura primeiro a sessão persistida. getSession() é a fonte
+    // local apropriada para esse momento e evita tratar a hidratação da sessão
+    // como falha de autenticação.
+    const {
+      data: { session },
+      error: sessionError,
+    } = await supabase.auth.getSession();
+
+    if (sessionError || !session) {
+      throw redirect({ to: "/login" });
+    }
+
+    // Com a sessão restaurada, confirma o usuário no servidor do Supabase.
+    // Mantemos a proteção da rota; não existe bypass de autenticação/RLS.
     const { data, error } = await supabase.auth.getUser();
-    if (error || !data.user) throw redirect({ to: "/login" });
+    if (error || !data.user) {
+      await supabase.auth.signOut({ scope: "local" });
+      throw redirect({ to: "/login" });
+    }
   },
   component: AppLayout,
 });
