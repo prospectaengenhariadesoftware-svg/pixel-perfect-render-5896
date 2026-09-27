@@ -47,7 +47,6 @@ type TenantUserRow = {
 
 type TenantUser = {
   id: string;
-  user_id: string;
   role: string | null;
   is_owner: boolean;
   status: string;
@@ -146,7 +145,6 @@ export function EmpresaModule() {
           setUsers(
             ((userRows ?? []) as TenantUserRow[]).map((user) => ({
               id: user.id,
-              user_id: user.user_id,
               role: user.tenant_roles?.name ?? null,
               is_owner: user.is_owner,
               status: user.status,
@@ -287,9 +285,11 @@ export function EmpresaModule() {
                       className="flex flex-col gap-2 rounded-lg border bg-card p-4 md:flex-row md:items-center md:justify-between"
                     >
                       <div>
-                        <div className="font-medium">{user.user_id}</div>
-                        <div className="text-sm text-muted-foreground">
+                        <div className="font-medium">
                           {user.is_owner ? "Administrador / proprietário" : user.role || "Usuário"}
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          Identificação nominal será carregada pela camada segura do banco.
                         </div>
                       </div>
                       <div className="text-sm text-muted-foreground">
