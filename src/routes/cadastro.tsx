@@ -4,9 +4,11 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { AuthShell } from "@/components/auth/AuthShell";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { documentKind, maskCep, maskCnpj, maskCpf, maskPhone, onlyDigits, slugify } from "@/lib/br-format";
+import { MODULES, type ModuleKey } from "@/lib/modules";
 import { getSupabase, isSupabaseConfigured } from "@/lib/supabase";
 
 export const Route = createFileRoute("/cadastro")({
@@ -37,6 +39,7 @@ type RegisterForm = {
   city: string;
   state: string;
   owners: OwnerContact[];
+  modules: ModuleKey[];
   password: string;
   confirmPassword: string;
 };
@@ -59,9 +62,16 @@ const initialForm = (): RegisterForm => ({
   city: "",
   state: "",
   owners: [emptyOwner()],
+  modules: [],
   password: "",
   confirmPassword: "",
 });
+
+const paidModules = MODULES.filter((module) => !module.core);
+
+function formatCurrency(value: number) {
+  return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
+}
 
 function firstAccessOwner(owners: OwnerContact[]) {
   return owners.find((owner) => owner.name.trim() && owner.email.trim()) ?? null;
@@ -74,6 +84,10 @@ function RegisterPage() {
   const [lookingUp, setLookingUp] = useState<string | null>(null);
 
   const accessOwner = useMemo(() => firstAccessOwner(form.owners), [form.owners]);
+  const monthlyTotal = useMemo(
+    () => paidModules.filter((module) => form.modules.includes(module.key)).reduce((sum, module) => sum + module.monthlyPrice, 0),
+    [form.modules],
+  );
 
   function update<K extends keyof RegisterForm>(key: K, value: RegisterForm[K]) {
     setForm((current) => ({ ...current, [key]: value }));
@@ -85,6 +99,15 @@ function RegisterPage() {
       owners: current.owners.map((owner, ownerIndex) =>
         ownerIndex === index ? { ...owner, [field]: field === "phone" ? maskPhone(value) : value } : owner,
       ),
+    }));
+  }
+
+  function toggleModule(moduleKey: ModuleKey, enabled: boolean) {
+    setForm((current) => ({
+      ...current,
+      modules: enabled
+        ? Array.from(new Set([...current.modules, moduleKey]))
+        : current.modules.filter((key) => key !== moduleKey),
     }));
   }
 
@@ -215,25 +238,48 @@ function RegisterPage() {
 
     setSaving(true);
     try {
-      const { error } = await supabase.rpc("register_company", {
-        _owner_email: owner.email.trim(),
-        _password: form.password,
-        _name: form.name.trim(),
-        _slug: form.slug.trim(),
-        _modules: [],
-        _company_data: companyData,
+      const email = owner.email.trim().toLowerCase();
+      const signUp = await supabase.auth.signUp({
+        email,
+        password: form.password,
+        options: {
+          data: {
+            name: owner.name.trim(),
+            company_name: form.name.trim(),
+            created_by: "public_company_registration",
+          },
+        },
       });
-      if (error) {
-        toast.error("Não foi possível criar a conta", { description: error.message });
+      if (signUp.error) {
+        toast.error("Não foi possível criar o acesso", { description: signUp.error.message });
         return;
       }
-      const login = await supabase.auth.signInWithPassword({ email: owner.email.trim(), password: form.password });
-      if (login.error) {
-        toast.success("Conta criada", { description: "Use o e-mail e senha cadastrados para entrar." });
+
+      const session = signUp.data.session
+        ? signUp.data.session
+        : (await supabase.auth.signInWithPassword({ email, password: form.password })).data.session;
+
+      if (!session) {
+        toast.error("Conta criada, mas o login automático não foi liberado", {
+          description: "Confirme o e-mail ou use Entrar com a senha cadastrada.",
+        });
         await navigate({ to: "/login" });
         return;
       }
-      toast.success("Conta criada com sucesso", { description: form.name.trim() });
+
+      const { error } = await supabase.rpc("register_company_from_session", {
+        _name: form.name.trim(),
+        _slug: form.slug.trim(),
+        _modules: form.modules,
+        _company_data: companyData,
+      });
+      if (error) {
+        await supabase.auth.signOut();
+        toast.error("Não foi possível criar a empresa", { description: error.message });
+        return;
+      }
+
+      toast.success("Conta criada com sucesso", { description: `${form.name.trim()} · ${formatCurrency(monthlyTotal)}/mês` });
       await navigate({ to: "/app/dashboard" });
     } finally {
       setSaving(false);
@@ -332,6 +378,38 @@ function RegisterPage() {
                 <Input value={owner.phone} onChange={(event) => updateOwner(index, "phone", event.target.value)} placeholder="Telefone" />
                 <Input type="email" value={owner.email} onChange={(event) => updateOwner(index, "email", event.target.value)} placeholder="E-mail do acesso" />
               </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="rounded-lg border p-3">
+          <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p className="text-sm font-semibold">Módulos contratados</p>
+              <p className="text-xs text-muted-foreground">Escolha agora para já deixar o valor mensal calculado quando a cobrança for ativada.</p>
+            </div>
+            <div className="rounded-md bg-primary/10 px-3 py-2 text-sm font-semibold text-primary">
+              Total: {formatCurrency(monthlyTotal)}/mês
+            </div>
+          </div>
+          <div className="mt-3 grid gap-3">
+            {paidModules.map((module) => (
+              <label key={module.key} className="flex cursor-pointer items-start gap-3 rounded-lg border bg-muted/30 p-3 transition hover:bg-muted/50">
+                <Checkbox
+                  checked={form.modules.includes(module.key)}
+                  onCheckedChange={(checked) => toggleModule(module.key, checked === true)}
+                  className="mt-1"
+                />
+                <span className="grid gap-1">
+                  <span className="flex flex-wrap items-center gap-2 text-sm font-semibold">
+                    {module.name}
+                    <span className="rounded-full bg-background px-2 py-0.5 text-xs text-muted-foreground">
+                      {formatCurrency(module.monthlyPrice)}/mês
+                    </span>
+                  </span>
+                  <span className="text-xs text-muted-foreground">{module.description}</span>
+                </span>
+              </label>
             ))}
           </div>
         </div>
