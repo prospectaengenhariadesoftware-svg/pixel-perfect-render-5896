@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Lock, Settings, Sparkles } from "lucide-react";
+import { Crown, Lock, Settings, Sparkles } from "lucide-react";
 import { MODULES } from "@/lib/modules";
 import { useTenant } from "@/lib/tenant-context";
 import { cn } from "@/lib/utils";
@@ -23,7 +23,7 @@ function BrandMark() {
 }
 
 export function AppSidebar({ onNavigate }: { onNavigate?: () => void }) {
-  const { activeModules: ACTIVE_MODULES, status } = useTenant();
+  const { activeModules: ACTIVE_MODULES, status, isPlatformAdmin } = useTenant();
   return (
     <div className="bg-gradient-ink flex h-full w-full flex-col border-r border-sidebar-border text-sidebar-foreground">
       <div className="border-b border-sidebar-border px-4 py-5">
@@ -82,10 +82,27 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void }) {
         </p>
         <ul className="space-y-1">
           <li>
-            <Link to="/app/modulos" onClick={onNavigate} activeProps={{ className: "bg-sidebar-accent text-sidebar-accent-foreground" }} className="flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium hover:bg-sidebar-accent/70 hover:text-sidebar-accent-foreground">
+            <Link
+              to="/app/modulos"
+              onClick={onNavigate}
+              activeProps={{ className: "bg-sidebar-accent text-sidebar-accent-foreground" }}
+              className="flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium hover:bg-sidebar-accent/70 hover:text-sidebar-accent-foreground"
+            >
               <Settings className="h-4 w-4" /> Módulos e plano
             </Link>
           </li>
+          {isPlatformAdmin && (
+            <li>
+              <Link
+                to="/app/super-admin"
+                onClick={onNavigate}
+                activeProps={{ className: "bg-sidebar-accent text-sidebar-accent-foreground" }}
+                className="flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium hover:bg-sidebar-accent/70 hover:text-sidebar-accent-foreground"
+              >
+                <Crown className="h-4 w-4" /> Super Admin
+              </Link>
+            </li>
+          )}
         </ul>
       </nav>
 
@@ -94,7 +111,9 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void }) {
           <Sparkles className="h-4 w-4" /> Módulos contratados
         </p>
         <p className="mt-1 text-xs text-sidebar-foreground/60">
-          {status === "ready" ? `${ACTIVE_MODULES.length} de ${MODULES.length} ativos` : "Aguardando conexão"}
+          {status === "ready"
+            ? `${ACTIVE_MODULES.length} de ${MODULES.length} ativos`
+            : "Aguardando conexão"}
         </p>
       </div>
     </div>

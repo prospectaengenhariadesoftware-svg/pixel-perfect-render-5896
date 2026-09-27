@@ -21,6 +21,7 @@ import { Route as AppFinanceiroRouteImport } from './routes/app/financeiro'
 import { Route as AppModulosRouteImport } from './routes/app/modulos'
 import { Route as AppObrasRouteImport } from './routes/app/obras'
 import { Route as AppRhRouteImport } from './routes/app/rh'
+import { Route as AppSuperAdminRouteImport } from './routes/app/super-admin'
 import { Route as AppSuprimentosRouteImport } from './routes/app/suprimentos'
 
 const IndexRoute = IndexRouteImport.update({
@@ -83,6 +84,11 @@ const AppRhRoute = AppRhRouteImport.update({
   path: '/rh',
   getParentRoute: () => AppRoute,
 } as any)
+const AppSuperAdminRoute = AppSuperAdminRouteImport.update({
+  id: '/super-admin',
+  path: '/super-admin',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppSuprimentosRoute = AppSuprimentosRouteImport.update({
   id: '/suprimentos',
   path: '/suprimentos',
@@ -101,6 +107,7 @@ export interface FileRoutesByFullPath {
   '/app/modulos': typeof AppModulosRoute
   '/app/obras': typeof AppObrasRoute
   '/app/rh': typeof AppRhRoute
+  '/app/super-admin': typeof AppSuperAdminRoute
   '/app/suprimentos': typeof AppSuprimentosRoute
   '/app/': typeof AppIndexRoute
 }
@@ -115,6 +122,7 @@ export interface FileRoutesByTo {
   '/app/modulos': typeof AppModulosRoute
   '/app/obras': typeof AppObrasRoute
   '/app/rh': typeof AppRhRoute
+  '/app/super-admin': typeof AppSuperAdminRoute
   '/app/suprimentos': typeof AppSuprimentosRoute
   '/app': typeof AppIndexRoute
 }
@@ -131,6 +139,7 @@ export interface FileRoutesById {
   '/app/modulos': typeof AppModulosRoute
   '/app/obras': typeof AppObrasRoute
   '/app/rh': typeof AppRhRoute
+  '/app/super-admin': typeof AppSuperAdminRoute
   '/app/suprimentos': typeof AppSuprimentosRoute
   '/app/': typeof AppIndexRoute
 }
@@ -148,6 +157,7 @@ export interface FileRouteTypes {
     | '/app/modulos'
     | '/app/obras'
     | '/app/rh'
+    | '/app/super-admin'
     | '/app/suprimentos'
     | '/app/'
   fileRoutesByTo: FileRoutesByTo
@@ -162,6 +172,7 @@ export interface FileRouteTypes {
     | '/app/modulos'
     | '/app/obras'
     | '/app/rh'
+    | '/app/super-admin'
     | '/app/suprimentos'
     | '/app'
   id:
@@ -177,6 +188,7 @@ export interface FileRouteTypes {
     | '/app/modulos'
     | '/app/obras'
     | '/app/rh'
+    | '/app/super-admin'
     | '/app/suprimentos'
     | '/app/'
   fileRoutesById: FileRoutesById
@@ -275,6 +287,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppRhRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/super-admin': {
+      id: '/app/super-admin'
+      path: '/super-admin'
+      fullPath: '/app/super-admin'
+      preLoaderRoute: typeof AppSuperAdminRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/suprimentos': {
       id: '/app/suprimentos'
       path: '/suprimentos'
@@ -292,6 +311,7 @@ interface AppRouteChildren {
   AppModulosRoute: typeof AppModulosRoute
   AppObrasRoute: typeof AppObrasRoute
   AppRhRoute: typeof AppRhRoute
+  AppSuperAdminRoute: typeof AppSuperAdminRoute
   AppSuprimentosRoute: typeof AppSuprimentosRoute
   AppIndexRoute: typeof AppIndexRoute
 }
@@ -303,6 +323,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppModulosRoute: AppModulosRoute,
   AppObrasRoute: AppObrasRoute,
   AppRhRoute: AppRhRoute,
+  AppSuperAdminRoute: AppSuperAdminRoute,
   AppSuprimentosRoute: AppSuprimentosRoute,
   AppIndexRoute: AppIndexRoute,
 }

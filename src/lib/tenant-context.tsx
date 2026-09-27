@@ -1,4 +1,12 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
 import type { User } from "@supabase/supabase-js";
 import type { ModuleKey } from "@/lib/modules";
 import { getSupabase, isSupabaseConfigured } from "@/lib/supabase";
@@ -31,6 +39,7 @@ interface TenantState {
   user: User | null;
   tenant: TenantInfo | null;
   activeModules: ModuleKey[];
+  isPlatformAdmin: boolean;
   isActive: (key: ModuleKey) => boolean;
   reload: () => void;
 }
@@ -38,11 +47,14 @@ interface TenantState {
 const Ctx = createContext<TenantState | null>(null);
 
 export function TenantProvider({ children }: { children: ReactNode }) {
-  const [status, setStatus] = useState<TenantStatus>(isSupabaseConfigured ? "loading" : "unconfigured");
+  const [status, setStatus] = useState<TenantStatus>(
+    isSupabaseConfigured ? "loading" : "unconfigured",
+  );
   const [error, setError] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [tenant, setTenant] = useState<TenantInfo | null>(null);
   const [activeModules, setActive] = useState<ModuleKey[]>([]);
+  const [isPlatformAdmin, setIsPlatformAdmin] = useState(false);
   const [nonce, setNonce] = useState(0);
 
   useEffect(() => {
@@ -56,6 +68,10 @@ export function TenantProvider({ children }: { children: ReactNode }) {
       setUser(userData.user);
       if (!userData.user) return setStatus("no-tenant");
 
+      const { data: adminData, error: adminErr } = await supabase.rpc("is_platform_admin");
+      if (cancelled) return;
+      if (!adminErr) setIsPlatformAdmin(Boolean(adminData));
+
       const { data: memberships, error: mErr } = await supabase
         .from("tenant_users")
         .select("tenant_id, is_owner, tenants(name)")
@@ -68,7 +84,11 @@ export function TenantProvider({ children }: { children: ReactNode }) {
         return setStatus("error");
       }
       const m = memberships?.[0] as
-        | { tenant_id: string; is_owner: boolean; tenants: { name: string } | { name: string }[] | null }
+        | {
+            tenant_id: string;
+            is_owner: boolean;
+            tenants: { name: string } | { name: string }[] | null;
+          }
         | undefined;
       if (!m) return setStatus("no-tenant");
       const t = Array.isArray(m.tenants) ? m.tenants[0] : m.tenants;
@@ -102,10 +122,11 @@ export function TenantProvider({ children }: { children: ReactNode }) {
       user,
       tenant,
       activeModules,
+      isPlatformAdmin,
       isActive: (k) => activeModules.includes(k),
       reload,
     }),
-    [status, error, user, tenant, activeModules, reload],
+    [status, error, user, tenant, activeModules, isPlatformAdmin, reload],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
