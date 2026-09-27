@@ -223,14 +223,20 @@ function SuperAdminPage() {
     }
     setLoading(true);
     setError(null);
-    const { data, error: rpcError } = await supabase.rpc("platform_admin_overview");
-    if (rpcError) {
-      setError(rpcError.message);
+    try {
+      const { data, error: rpcError } = await supabase.rpc("platform_admin_overview");
+      if (rpcError) {
+        setError(rpcError.message);
+        setOverview(null);
+      } else {
+        setOverview(normalizeOverview(data));
+      }
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Falha inesperada ao carregar empresas.");
       setOverview(null);
-    } else {
-      setOverview(normalizeOverview(data));
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
   useEffect(() => {
@@ -440,24 +446,57 @@ function SuperAdminPage() {
       owners: kind === "cnpj" ? tenantForm.owners.filter((owner) => owner.name.trim()) : [],
     };
     setSavingKey("tenant:create");
-    const { error: rpcError } = await supabase.rpc("create_tenant", {
-      _name: tenantForm.name.trim(),
-      _slug: tenantForm.slug.trim(),
-      _owner_email: tenantForm.ownerEmail.trim(),
-      _modules: tenantForm.modules,
-      _company_data: companyData,
-    });
-    setSavingKey(null);
+    try {
+      let { data: tenantId, error: rpcError } = await supabase.rpc("create_tenant", {
+        _name: tenantForm.name.trim(),
+        _slug: tenantForm.slug.trim(),
+        _owner_email: tenantForm.ownerEmail.trim(),
+        _modules: tenantForm.modules,
+        _company_data: companyData,
+      });
 
-    if (rpcError) {
-      toast.error("Não foi possível criar a empresa", { description: rpcError.message });
-      return;
+      const message = rpcError?.message ?? "";
+      const missingCompanyDataRpc =
+        rpcError &&
+        (message.includes("_company_data") ||
+          message.includes("Could not find the function") ||
+          message.includes("PGRST202"));
+
+      if (missingCompanyDataRpc) {
+        const fallback = await supabase.rpc("create_tenant", {
+          _name: tenantForm.name.trim(),
+          _slug: tenantForm.slug.trim(),
+          _owner_email: tenantForm.ownerEmail.trim(),
+          _modules: tenantForm.modules,
+        });
+        tenantId = fallback.data;
+        rpcError = fallback.error;
+        if (!rpcError) {
+          toast.warning("Empresa criada, mas o banco precisa da migration 0005", {
+            description: "Dados completos/ proprietários serão gravados após aplicar a migration.",
+          });
+        }
+      }
+
+      if (rpcError) {
+        toast.error("Não foi possível criar a empresa", { description: rpcError.message });
+        return;
+      }
+
+      toast.success("Empresa criada", { description: tenantForm.name.trim() });
+      if (!tenantId) {
+        toast.info("Recarregando lista de empresas...");
+      }
+      setTenantForm(initialTenantForm());
+      setCreateOpen(false);
+      await load();
+    } catch (error) {
+      toast.error("Não foi possível criar a empresa", {
+        description: error instanceof Error ? error.message : "Falha inesperada no cadastro.",
+      });
+    } finally {
+      setSavingKey(null);
     }
-
-    toast.success("Empresa criada", { description: tenantForm.name.trim() });
-    setTenantForm(initialTenantForm());
-    setCreateOpen(false);
-    await load();
   }
 
   async function updateTenantStatus(tenant: AdminTenant, nextStatus: string) {
