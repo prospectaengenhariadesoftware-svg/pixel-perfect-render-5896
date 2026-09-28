@@ -11,14 +11,14 @@ type CompanyData = { personType?: "pj" | "pf"; legalName?: string; tradeName?: s
 type OwnerContactRow = { id: string; name: string; phone: string | null; email: string | null; function_title: string | null };
 type OwnerContact = { id: string; name: string; phone: string | null; email: string | null; function: string | null };
 type OwnerForm = { id: string | null; name: string; phone: string; email: string; function: string };
-type TenantUserRow = { id: string; user_id: string; is_owner: boolean; status: string; created_at: string; tenant_roles: { name: string | null } | null };
-type TenantUser = { id: string; user_id: string; role: string | null; is_owner: boolean; status: string; created_at: string };
+type TenantUser = { tenant_user_id: string; user_id: string; display_name: string | null; email: string | null; phone: string | null; avatar_url: string | null; is_owner: boolean; status: string; role_name: string | null; created_at: string };
 
 const emptyCompany: CompanyData = { personType: "pj", legalName: "", tradeName: "", document: "", email: "", phone: "", cep: "", street: "", number: "", complement: "", neighborhood: "", city: "", state: "" };
 const emptyOwner: OwnerForm = { id: null, name: "", phone: "", email: "", function: "Proprietário" };
 const fieldClass = "h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring";
 function dateShort(value?: string | null) { return value ? new Date(value).toLocaleDateString("pt-BR") : "—"; }
 function validEmail(value: string) { return !value || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value); }
+function statusLabel(value?: string | null) { if (!value) return "—"; return value.charAt(0).toUpperCase() + value.slice(1).toLowerCase(); }
 
 export function EmpresaModule() {
   const supabase = getSupabase();
@@ -53,13 +53,13 @@ export function EmpresaModule() {
         const companyStored = stored as CompanyData;
         const { data: ownerRows, error: ownersError } = await supabase.from("tenant_owner_contacts").select("id, name, phone, email, function_title").eq("tenant_id", tenantId).order("name", { ascending: true });
         if (ownersError) throw ownersError;
-        const { data: userRows, error: usersError } = await supabase.from("tenant_users").select("id, user_id, is_owner, status, created_at, tenant_roles(name)").eq("tenant_id", tenantId).order("is_owner", { ascending: false }).order("created_at", { ascending: true }).limit(500);
+        const { data: userRows, error: usersError } = await supabase.rpc("get_tenant_users", { _tenant: tenantId });
         if (usersError) throw usersError;
         if (!cancelled) {
           setStoredSettings(stored);
           setCompany({ ...emptyCompany, ...companyStored, tradeName: companyStored.tradeName || tenant?.name || "" });
           setOwners(((ownerRows ?? []) as OwnerContactRow[]).map((o) => ({ id: o.id, name: o.name, phone: o.phone, email: o.email, function: o.function_title })));
-          setUsers(((userRows ?? []) as TenantUserRow[]).map((u) => ({ id: u.id, user_id: u.user_id, role: u.tenant_roles?.name ?? null, is_owner: u.is_owner, status: u.status, created_at: u.created_at })));
+          setUsers(((userRows ?? []) as TenantUser[]).sort((a, b) => Number(b.is_owner) - Number(a.is_owner) || a.display_name?.localeCompare(b.display_name || "", "pt-BR") || 0));
         }
       } catch (e) { if (!cancelled) setError(e instanceof Error ? e.message : "Falha inesperada ao carregar dados da empresa."); }
       finally { if (!cancelled) setLoading(false); }
@@ -197,7 +197,10 @@ export function EmpresaModule() {
         </CardContent>
       </Card></TabsContent>
 
-      <TabsContent value="usuarios"><Card className="shadow-card"><CardHeader><CardTitle>Usuários vinculados</CardTitle></CardHeader><CardContent>{loading ? <div className="text-sm text-muted-foreground">Carregando vínculos...</div> : users.length === 0 ? <div className="text-sm text-muted-foreground">Não há usuários vinculados a esta empresa.</div> : <div className="space-y-3">{users.map((user) => <div key={user.id} className="flex flex-col gap-2 rounded-lg border bg-card p-4 md:flex-row md:items-center md:justify-between"><div><div className="font-medium">{user.user_id}</div><div className="text-sm text-muted-foreground">{user.is_owner ? "Administrador / proprietário" : user.role || "Usuário"}</div></div><div className="text-sm text-muted-foreground">{user.status} · vínculo em {dateShort(user.created_at)}</div></div>)}</div>}</CardContent></Card></TabsContent>
+      <TabsContent value="usuarios"><Card className="shadow-card">
+        <CardHeader><CardTitle>Usuários vinculados</CardTitle><p className="mt-1 text-sm text-muted-foreground">Usuários com acesso à empresa atual.</p></CardHeader>
+        <CardContent>{loading ? <div className="text-sm text-muted-foreground">Carregando usuários...</div> : users.length === 0 ? <div className="text-sm text-muted-foreground">Não há usuários vinculados a esta empresa.</div> : <div className="grid gap-3 md:grid-cols-2">{users.map((user) => <div key={user.tenant_user_id} className="rounded-lg border bg-card p-4"><div className="flex items-start gap-3">{user.avatar_url ? <img src={user.avatar_url} alt="" className="h-11 w-11 shrink-0 rounded-full object-cover" /> : <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-muted text-sm font-semibold">{(user.display_name || user.email || "U").trim().charAt(0).toUpperCase()}</div>}<div className="min-w-0 flex-1"><div className="truncate font-semibold">{user.display_name || "Usuário"}</div><div className="text-sm text-muted-foreground">{user.is_owner ? "Administrador / proprietário" : user.role_name || "Usuário"}</div></div></div><div className="mt-3 space-y-1 text-sm"><div className="break-all">{user.email || "E-mail não informado"}</div>{user.phone && <div>{maskPhone(user.phone)}</div>}<div className="text-muted-foreground">{statusLabel(user.status)} · vinculado em {dateShort(user.created_at)}</div></div></div>)}</div>}</CardContent>
+      </Card></TabsContent>
     </Tabs>
   </div>;
 }
