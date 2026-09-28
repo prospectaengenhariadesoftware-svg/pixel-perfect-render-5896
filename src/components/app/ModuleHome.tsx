@@ -4,7 +4,7 @@ import { EmptyState, PageHeader } from "@/components/app/ui-kit";
 import { ModuleGate } from "@/components/app/ModuleGate";
 import { getModule, MODULE_ROADMAP, type ModuleKey } from "@/lib/modules";
 import { EmpresaModule } from "@/components/modules/empresa/EmpresaModule";
-import { RhModule } from "@/components/modules/rh/RhModule";
+import { RhWorkspace } from "@/components/modules/rh/RhWorkspace";
 
 /** Página inicial de um módulo: escopo planejado, sem dados inventados. */
 export function ModuleHome({ module }: { module: Exclude<ModuleKey, "dashboard"> }) {
@@ -15,7 +15,7 @@ export function ModuleHome({ module }: { module: Exclude<ModuleKey, "dashboard">
   }
 
   if (module === "rh") {
-    return <ModuleGate module={module}><RhModule /></ModuleGate>;
+    return <ModuleGate module={module}><RhWorkspace /></ModuleGate>;
   }
 
   return (
