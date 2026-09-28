@@ -1626,7 +1626,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-function Info({ label, value }: { label: string; value?: string | number | null }) {
+function Info({ label, value }: { label: string; value?: string | number | null | undefined }) {
   return (
     <div className="rounded-lg bg-muted/30 p-3">
       <p className="text-xs uppercase tracking-wide text-muted-foreground">{label}</p>

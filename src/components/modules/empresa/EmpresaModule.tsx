@@ -42,18 +42,19 @@ export function EmpresaModule() {
   useEffect(() => {
     if (tenantStatus === "loading") return;
     if (!supabase) { setError("Supabase não está configurado neste ambiente."); setLoading(false); return; }
+    const sb = supabase;
     if (!tenantId) { setError("Nenhuma empresa ativa foi identificada para este usuário."); setLoading(false); return; }
     let cancelled = false;
     async function loadCompanyArea() {
       setLoading(true); setError(null);
       try {
-        const { data: settings, error: settingsError } = await supabase.from("tenant_settings").select("settings").eq("tenant_id", tenantId).maybeSingle();
+        const { data: settings, error: settingsError } = await sb.from("tenant_settings").select("settings").eq("tenant_id", tenantId).maybeSingle();
         if (settingsError) throw settingsError;
         const stored = settings?.settings && typeof settings.settings === "object" && !Array.isArray(settings.settings) ? settings.settings as Record<string, unknown> : {};
         const companyStored = stored as CompanyData;
-        const { data: ownerRows, error: ownersError } = await supabase.from("tenant_owner_contacts").select("id, name, phone, email, function_title").eq("tenant_id", tenantId).order("name", { ascending: true });
+        const { data: ownerRows, error: ownersError } = await sb.from("tenant_owner_contacts").select("id, name, phone, email, function_title").eq("tenant_id", tenantId).order("name", { ascending: true });
         if (ownersError) throw ownersError;
-        const { data: userRows, error: usersError } = await supabase.rpc("get_tenant_users", { _tenant: tenantId });
+        const { data: userRows, error: usersError } = await sb.rpc("get_tenant_users", { _tenant: tenantId });
         if (usersError) throw usersError;
         if (!cancelled) {
           setStoredSettings(stored);
@@ -120,7 +121,7 @@ export function EmpresaModule() {
       const response = await fetch(`/api/cnpj/${digits}`);
       const data = await response.json() as { error?: string; razao_social?: string; nome_fantasia?: string; email?: string | null; ddd_telefone_1?: string | null; cep?: string | null; logradouro?: string | null; numero?: string | null; complemento?: string | null; bairro?: string | null; municipio?: string | null; uf?: string | null };
       if (!response.ok) throw new Error(data.error || "CNPJ não localizado.");
-      setCompany((current) => ({ ...current, personType: "pj", document: maskCnpj(digits), legalName: data.razao_social ?? current.legalName, tradeName: data.nome_fantasia || data.razao_social || current.tradeName, email: data.email ?? current.email, phone: data.ddd_telefone_1 ? maskPhone(data.ddd_telefone_1) : current.phone, cep: maskCep(data.cep ?? ""), street: data.logradouro ?? "", number: data.numero && data.numero !== "S/N" ? data.numero : "", complement: data.complemento ?? "", neighborhood: data.bairro ?? "", city: data.municipio ?? "", state: data.uf ?? "" }));
+      setCompany((current) => ({ ...current, personType: "pj", document: maskCnpj(digits), legalName: data.razao_social ?? current.legalName ?? "", tradeName: data.nome_fantasia || data.razao_social || current.tradeName || "", email: data.email ?? current.email ?? "", phone: data.ddd_telefone_1 ? maskPhone(data.ddd_telefone_1) : current.phone ?? "", cep: maskCep(data.cep ?? ""), street: data.logradouro ?? "", number: data.numero && data.numero !== "S/N" ? data.numero : "", complement: data.complemento ?? "", neighborhood: data.bairro ?? "", city: data.municipio ?? "", state: data.uf ?? "" }));
       setSuccess("Dados do CNPJ preenchidos automaticamente. Confira as informações antes de salvar.");
     } catch (e) { setError(e instanceof Error ? e.message : "Não foi possível consultar o CNPJ."); }
     finally { setLookingUp(null); }
@@ -147,7 +148,7 @@ export function EmpresaModule() {
     if (!company.document?.trim()) { setError(isPJ ? "Informe o CNPJ." : "Informe o CPF."); return; }
     setSaving(true); setError(null); setSuccess(null);
     try {
-      const normalizedCompany = { ...company, legalName: company.legalName?.trim(), tradeName: company.tradeName?.trim(), document: company.document.trim(), email: company.email?.trim(), phone: company.phone?.trim(), cep: company.cep?.trim(), street: company.street?.trim(), number: company.number?.trim(), complement: company.complement?.trim(), neighborhood: company.neighborhood?.trim(), city: company.city?.trim(), state: company.state?.trim().toUpperCase() };
+      const normalizedCompany = { ...company, legalName: company.legalName?.trim() ?? "", tradeName: company.tradeName?.trim() ?? "", document: company.document.trim(), email: company.email?.trim() ?? "", phone: company.phone?.trim() ?? "", cep: company.cep?.trim() ?? "", street: company.street?.trim() ?? "", number: company.number?.trim() ?? "", complement: company.complement?.trim() ?? "", neighborhood: company.neighborhood?.trim() ?? "", city: company.city?.trim() ?? "", state: company.state?.trim().toUpperCase() ?? "" };
       const payload = { ...storedSettings, ...normalizedCompany };
       const { error: saveError } = await supabase.from("tenant_settings").upsert({ tenant_id: tenantId, settings: payload }, { onConflict: "tenant_id" });
       if (saveError) throw saveError;
