@@ -24,6 +24,8 @@ import { Route as AppObrasRouteImport } from './routes/app/obras'
 import { Route as AppRhRouteImport } from './routes/app/rh'
 import { Route as AppSuperAdminRouteImport } from './routes/app/super-admin'
 import { Route as AppSuprimentosRouteImport } from './routes/app/suprimentos'
+import { Route as ApiCepCepRouteImport } from './routes/api/cep/$cep'
+import { Route as ApiCnpjCnpjRouteImport } from './routes/api/cnpj/$cnpj'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -100,6 +102,16 @@ const AppSuprimentosRoute = AppSuprimentosRouteImport.update({
   path: '/suprimentos',
   getParentRoute: () => AppRoute,
 } as any)
+const ApiCepCepRoute = ApiCepCepRouteImport.update({
+  id: '/api/cep/$cep',
+  path: '/api/cep/$cep',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiCnpjCnpjRoute = ApiCnpjCnpjRouteImport.update({
+  id: '/api/cnpj/$cnpj',
+  path: '/api/cnpj/$cnpj',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -117,6 +129,8 @@ export interface FileRoutesByFullPath {
   '/app/super-admin': typeof AppSuperAdminRoute
   '/app/suprimentos': typeof AppSuprimentosRoute
   '/app/': typeof AppIndexRoute
+  '/api/cep/$cep': typeof ApiCepCepRoute
+  '/api/cnpj/$cnpj': typeof ApiCnpjCnpjRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -133,6 +147,8 @@ export interface FileRoutesByTo {
   '/app/super-admin': typeof AppSuperAdminRoute
   '/app/suprimentos': typeof AppSuprimentosRoute
   '/app': typeof AppIndexRoute
+  '/api/cep/$cep': typeof ApiCepCepRoute
+  '/api/cnpj/$cnpj': typeof ApiCnpjCnpjRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -151,6 +167,8 @@ export interface FileRoutesById {
   '/app/super-admin': typeof AppSuperAdminRoute
   '/app/suprimentos': typeof AppSuprimentosRoute
   '/app/': typeof AppIndexRoute
+  '/api/cep/$cep': typeof ApiCepCepRoute
+  '/api/cnpj/$cnpj': typeof ApiCnpjCnpjRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -170,6 +188,8 @@ export interface FileRouteTypes {
     | '/app/super-admin'
     | '/app/suprimentos'
     | '/app/'
+    | '/api/cep/$cep'
+    | '/api/cnpj/$cnpj'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -186,6 +206,8 @@ export interface FileRouteTypes {
     | '/app/super-admin'
     | '/app/suprimentos'
     | '/app'
+    | '/api/cep/$cep'
+    | '/api/cnpj/$cnpj'
   id:
     | '__root__'
     | '/'
@@ -203,6 +225,8 @@ export interface FileRouteTypes {
     | '/app/super-admin'
     | '/app/suprimentos'
     | '/app/'
+    | '/api/cep/$cep'
+    | '/api/cnpj/$cnpj'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -212,6 +236,8 @@ export interface RootRouteChildren {
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   LoginRoute: typeof LoginRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  ApiCepCepRoute: typeof ApiCepCepRoute
+  ApiCnpjCnpjRoute: typeof ApiCnpjCnpjRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -321,6 +347,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSuprimentosRouteImport
       parentRoute: typeof AppRoute
     }
+    '/api/cep/$cep': {
+      id: '/api/cep/$cep'
+      path: '/api/cep/$cep'
+      fullPath: '/api/cep/$cep'
+      preLoaderRoute: typeof ApiCepCepRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/cnpj/$cnpj': {
+      id: '/api/cnpj/$cnpj'
+      path: '/api/cnpj/$cnpj'
+      fullPath: '/api/cnpj/$cnpj'
+      preLoaderRoute: typeof ApiCnpjCnpjRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -357,6 +397,8 @@ const rootRouteChildren: RootRouteChildren = {
   ForgotPasswordRoute: ForgotPasswordRoute,
   LoginRoute: LoginRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  ApiCepCepRoute: ApiCepCepRoute,
+  ApiCnpjCnpjRoute: ApiCnpjCnpjRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
