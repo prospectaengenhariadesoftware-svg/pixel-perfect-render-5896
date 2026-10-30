@@ -81,13 +81,22 @@ export function EmployeeRecords() {
   function printRecord(employee: Employee, printMode: PrintMode) {
     // A impressão usa somente dados já retornados pelo Supabase sob RLS.
     // Nenhuma ficha é armazenada em serviços externos.
-    const popup = window.open("","_blank","noopener,noreferrer,width=900,height=700");
-    if (!popup) { setError("Permita janelas pop-up para imprimir a ficha."); return; }
+    const frame = document.createElement("iframe");
+    frame.setAttribute("title", "Impressão da ficha cadastral");
+    frame.style.position = "fixed";
+    frame.style.width = "0";
+    frame.style.height = "0";
+    frame.style.border = "0";
+    frame.style.opacity = "0";
+    document.body.appendChild(frame);
+    const printWindow = frame.contentWindow;
+    if (!printWindow) { frame.remove(); setError("Não foi possível preparar a impressão."); return; }
     const escapeHtml = (s: string) => s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c] ?? c));
     const rows = printableFields(employee,printMode).map(([key,value])=>
       `<div class="field"><div class="label">${escapeHtml(formatLabel(key))}</div><div>${escapeHtml(formatValue(value,key))}</div></div>`
     ).join("");
-    popup.document.write(`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Ficha cadastral</title>
+    printWindow.document.open();
+    printWindow.document.write(`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Ficha cadastral</title>
       <style>@page{size:A4;margin:16mm}body{font:12px Arial,sans-serif;color:#151515;margin:0}
       header{border-bottom:2px solid #222;padding-bottom:12px;margin-bottom:20px}h1{font-size:18px;margin:0 0 6px}
       .muted,.label{color:#555}.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
@@ -97,8 +106,14 @@ export function EmployeeRecords() {
       <header><h1>Ficha cadastral do colaborador</h1><div>${escapeHtml(tenant?.name ?? "Empresa")}</div>
       <p class="muted">Versão ${printMode === "completa" ? "completa" : "resumida"} · Informações cadastrais</p></header>
       <div class="grid">${rows}</div><footer>Documento gerado a partir das informações disponíveis no cadastro.</footer>
-      <script>window.addEventListener("load",()=>window.print());<\/script></body></html>`);
-    popup.document.close();
+      </body></html>`);
+    printWindow.document.close();
+    const cleanup = () => { window.setTimeout(() => frame.remove(), 1000); };
+    printWindow.addEventListener("afterprint", cleanup, { once: true });
+    // Aciona o diálogo de impressão no contexto do clique, sem abrir uma nova aba.
+    printWindow.focus();
+    printWindow.print();
+    window.setTimeout(() => { if (frame.isConnected) frame.remove(); }, 120000);
   }
   return <div className="space-y-4">
     {(!tenant?.id || status === "error") && <p role="alert" className="rounded-md border border-amber-500/40 p-3 text-sm">Não foi possível identificar a empresa vinculada à sessão. {tenantError ?? "Verifique o acesso à empresa e atualize a página."}</p>}
