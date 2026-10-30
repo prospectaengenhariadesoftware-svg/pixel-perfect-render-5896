@@ -8,11 +8,47 @@ type PrintMode = "completa" | "resumida";
 const internal = new Set(["id", "tenant_id", "tenant_user_id", "employee_id", "created_by", "updated_by", "deleted_at", "created_at", "updated_at", "position"]);
 const sensitive = /cpf|rg|document|birth|nascimento|bank|banco|agencia|conta|pix|salario|salary|remuner|benefit|beneficio|pis|ctps|cnh|dependente/i;
 const labels: Record<string,string> = {
-  name:"Nome completo", position:"Cargo", status:"Situação", email:"E-mail", phone:"Telefone",
-  cpf:"CPF", rg:"RG", birth_date:"Data de nascimento", admission_date:"Admissão",
-  department_id:"Departamento", position_id:"Cargo", function_id:"Função", address:"Endereço",
-  sex:"Sexo", marital_status:"Estado civil", nationality:"Nacionalidade", mother_name:"Nome da mãe", father_name:"Nome do pai", termination_date:"Desligamento",
-  created_at:"Cadastro realizado em", updated_at:"Última atualização", id:"Identificador"
+    name: "Nome completo",
+    status: "Situação",
+    department_id: "Departamento",
+    position_id: "Cargo",
+    function_id: "Função",
+    admission_date: "Data de admissão",
+    termination_date: "Data de desligamento",
+    cpf: "CPF",
+    rg: "RG",
+    birth_date: "Data de nascimento",
+    sex: "Sexo",
+    marital_status: "Estado civil",
+    nationality: "Nacionalidade",
+    birth_place: "Naturalidade",
+    mother_name: "Nome da mãe",
+    father_name: "Nome do pai",
+    phone: "Telefone",
+    email: "E-mail",
+    emergency_contact_name: "Contato de emergência",
+    emergency_contact_relationship: "Parentesco do contato de emergência",
+    emergency_contact_phone: "Telefone de emergência",
+    postal_code: "CEP",
+    street: "Logradouro",
+    number: "Número",
+    complement: "Complemento",
+    district: "Bairro",
+    city: "Cidade",
+    state: "Estado (UF)",
+    pis_pasep: "PIS/PASEP",
+    ctps: "CTPS",
+    voter_registration: "Título de eleitor",
+    military_certificate: "Certificado de reservista",
+    cnh: "CNH",
+    cnh_category: "Categoria da CNH",
+    cnh_expires_at: "Validade da CNH",
+    bank_name: "Banco",
+    agency: "Agência",
+    account_number: "Número da conta",
+    account_type: "Tipo de conta",
+    pix_key: "Chave PIX",
+    salary: "Salário"
 };
 const formatLabel = (key: string) => labels[key] ?? key.replace(/_/g," ").replace(/^./,c=>c.toUpperCase());
 function formatValue(value: unknown, key = "") {
@@ -24,7 +60,7 @@ function formatValue(value: unknown, key = "") {
   return String(value);
 }
 function printableFields(employee: Employee, mode: PrintMode) {
-  return Object.entries(employee).filter(([key]) => !internal.has(key) && (mode === "completa" || !sensitive.test(key)));
+  return Object.entries(employee).filter(([key]) => !internal.has(key) && key in labels && (mode === "completa" || !sensitive.test(key)));
 }
 export function EmployeeRecords() {
   const supabase = getSupabase();
