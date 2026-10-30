@@ -5,18 +5,21 @@ import { useTenant } from "@/lib/tenant-context";
 
 type Employee = Record<string, unknown> & { id: string; name: string };
 type PrintMode = "completa" | "resumida";
-const internal = new Set(["tenant_id", "employee_id", "created_by", "updated_by", "deleted_at"]);
+const internal = new Set(["id", "tenant_id", "tenant_user_id", "employee_id", "created_by", "updated_by", "deleted_at", "created_at", "updated_at", "position"]);
 const sensitive = /cpf|rg|document|birth|nascimento|bank|banco|agencia|conta|pix|salario|salary|remuner|benefit|beneficio|pis|ctps|cnh|dependente/i;
 const labels: Record<string,string> = {
   name:"Nome completo", position:"Cargo", status:"Situação", email:"E-mail", phone:"Telefone",
   cpf:"CPF", rg:"RG", birth_date:"Data de nascimento", admission_date:"Admissão",
   department_id:"Departamento", position_id:"Cargo", function_id:"Função", address:"Endereço",
+  sex:"Sexo", marital_status:"Estado civil", nationality:"Nacionalidade", mother_name:"Nome da mãe", father_name:"Nome do pai", termination_date:"Desligamento",
   created_at:"Cadastro realizado em", updated_at:"Última atualização", id:"Identificador"
 };
 const formatLabel = (key: string) => labels[key] ?? key.replace(/_/g," ").replace(/^./,c=>c.toUpperCase());
-function formatValue(value: unknown) {
+function formatValue(value: unknown, key = "") {
   if (value === null || value === undefined || value === "") return "Não informado";
   if (typeof value === "boolean") return value ? "Sim" : "Não";
+  if (key === "status") return String(value).replace(/^./,c=>c.toUpperCase());
+  if (/(_date|_at|_expires_at)$/.test(key) && typeof value === "string") { const match = value.match(/^(\d{4})-(\d{2})-(\d{2})/); if (match) return `${match[3]}/${match[2]}/${match[1]}`; }
   if (typeof value === "object") return JSON.stringify(value);
   return String(value);
 }
@@ -50,7 +53,14 @@ export function EmployeeRecords() {
     setError(null); setDetailsLoading(true); setSelected(null);
     try {
       const tables = ["rh_employee_personal_details","rh_employee_addresses","rh_employee_documents","rh_employee_bank_accounts","rh_employee_compensation"] as const;
-      const results = await Promise.all(tables.map(table => supabase.from(table).select("*").eq("tenant_id",tenant.id).eq("employee_id",employee.id).maybeSingle()));
+      const [results, referenceResults] = await Promise.all([
+        Promise.all(tables.map(table => supabase.from(table).select("*").eq("tenant_id",tenant.id).eq("employee_id",employee.id).maybeSingle())),
+        Promise.all(["rh_departments","rh_positions","rh_functions"].map(table => supabase.from(table).select("id,name").eq("tenant_id",tenant.id)))
+      ]);
+      const referenceError = referenceResults.find(result => result.error);
+      if (referenceError?.error) throw referenceError.error;
+      const lookup: Record<string,string> = {};
+      for (const result of referenceResults) for (const row of result.data ?? []) lookup[row.id] = row.name;
       // Falhar fechado: se uma tabela estiver inacessível, não exibir ficha incompleta como completa.
       const failed = results.find(result => result.error);
       if (failed?.error) throw failed.error;
@@ -59,6 +69,10 @@ export function EmployeeRecords() {
         for (const [key,value] of Object.entries(result.data)) {
           if (!internal.has(key) && key !== "id") combined[key] = value;
         }
+      }
+      for (const key of ["department_id","position_id","function_id"]) {
+        const id = combined[key];
+        if (typeof id === "string") combined[key] = lookup[id] ?? "Cadastro não localizado";
       }
       setSelected(combined);
     } catch(e) { setError(e instanceof Error ? e.message : "Não foi possível consultar a ficha."); }
@@ -71,7 +85,7 @@ export function EmployeeRecords() {
     if (!popup) { setError("Permita janelas pop-up para imprimir a ficha."); return; }
     const escapeHtml = (s: string) => s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c] ?? c));
     const rows = printableFields(employee,printMode).map(([key,value])=>
-      `<div class="field"><div class="label">${escapeHtml(formatLabel(key))}</div><div>${escapeHtml(formatValue(value))}</div></div>`
+      `<div class="field"><div class="label">${escapeHtml(formatLabel(key))}</div><div>${escapeHtml(formatValue(value,key))}</div></div>`
     ).join("");
     popup.document.write(`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Ficha cadastral</title>
       <style>@page{size:A4;margin:16mm}body{font:12px Arial,sans-serif;color:#151515;margin:0}
@@ -92,10 +106,10 @@ export function EmployeeRecords() {
     {!tenant?.id ? null : loading ? <p className="text-sm text-muted-foreground">Carregando colaboradores...</p> :
       items.length === 0 ? <p className="rounded-md border border-dashed p-6 text-sm text-muted-foreground">Nenhum colaborador encontrado.</p> :
       <div className="grid gap-3 md:grid-cols-2">{items.map(item=><div key={item.id} className="rounded-lg border p-4">
-        <div className="font-semibold">{item.name}</div><p className="text-sm text-muted-foreground">{formatValue(item.position)} · {formatValue(item.status)}</p>
+        <div className="font-semibold">{item.name}</div><p className="text-sm text-muted-foreground">{formatValue(item.status,"status")}</p>
         <div className="mt-3 flex flex-wrap gap-2">
           <button className="inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm" onClick={()=>void openRecord(item)}><Eye size={16}/> Visualizar</button>
-          <button className="inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm" onClick={()=>printRecord(item,"resumida")}><Printer size={16}/> Imprimir resumida</button>
+          <button className="inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm" onClick={()=>void openRecord(item)}><Printer size={16}/> Abrir ficha para impressão</button>
         </div></div>)}</div>}
     {detailsLoading && <p className="text-sm text-muted-foreground">Consultando ficha cadastral...</p>}
     {selected && <div role="dialog" aria-modal="true" aria-label="Ficha do colaborador" className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
@@ -109,7 +123,7 @@ export function EmployeeRecords() {
           </select></label>
         <div className="grid gap-3 sm:grid-cols-2">{printableFields(selected,mode).map(([key,value])=>
           <div key={key} className="min-w-0 rounded-md border p-3"><p className="text-xs text-muted-foreground">{formatLabel(key)}</p>
-            <p className="break-words text-sm font-medium">{formatValue(value)}</p></div>)}</div>
+            <p className="break-words text-sm font-medium">{formatValue(value,key)}</p></div>)}</div>
         <div className="mt-5 flex justify-end gap-2">
           <button className="rounded-md border px-4 py-2 text-sm" onClick={()=>setSelected(null)}>Fechar</button>
           <button className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm text-primary-foreground" onClick={()=>printRecord(selected,mode)}>
