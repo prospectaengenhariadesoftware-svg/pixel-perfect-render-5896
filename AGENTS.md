@@ -11,3 +11,4 @@
 - Supabase no navegador só via `getSupabase()` em src/lib/supabase.ts com chave anon — service role nunca no cliente.
 - Tenant ativo vem de `tenant_users` via TenantProvider; nunca da URL — isolamento depende do RLS.
 - Nenhum dado fictício na UI; sem conexão, mostrar estados vazios/“modo de configuração”.
+- Preview lê URL e chave anon do Supabase de `.env` versionado (só variáveis VITE_ públicas); arquivos `*.local` somem quando o ambiente reinicia. Segredos nunca vão para `.env`.
