@@ -5,7 +5,7 @@ import { useTenant } from "@/lib/tenant-context";
 
 type Employee = Record<string, unknown> & { id: string; name: string };
 type PrintMode = "completa" | "resumida";
-const internal = new Set(["tenant_id", "created_by", "updated_by", "deleted_at"]);
+const internal = new Set(["tenant_id", "employee_id", "created_by", "updated_by", "deleted_at"]);
 const sensitive = /cpf|rg|document|birth|nascimento|bank|banco|agencia|conta|pix|salario|salary|remuner|benefit|beneficio|pis|ctps|cnh|dependente/i;
 const labels: Record<string,string> = {
   name:"Nome completo", position:"Cargo", status:"Situação", email:"E-mail", phone:"Telefone",
@@ -28,6 +28,7 @@ export function EmployeeRecords() {
   const { tenant, status } = useTenant();
   const [items,setItems] = useState<Employee[]>([]);
   const [selected,setSelected] = useState<Employee|null>(null);
+  const [detailsLoading,setDetailsLoading] = useState(false);
   const [mode,setMode] = useState<PrintMode>("resumida");
   const [loading,setLoading] = useState(false);
   const [error,setError] = useState<string|null>(null);
@@ -44,6 +45,25 @@ export function EmployeeRecords() {
       });
     return ()=>{cancelled=true};
   },[supabase,tenant?.id,status]);
+  async function openRecord(employee: Employee) {
+    if (!supabase || !tenant?.id) return;
+    setError(null); setDetailsLoading(true); setSelected(null);
+    try {
+      const tables = ["rh_employee_personal_details","rh_employee_addresses","rh_employee_documents","rh_employee_bank_accounts","rh_employee_compensation"] as const;
+      const results = await Promise.all(tables.map(table => supabase.from(table).select("*").eq("tenant_id",tenant.id).eq("employee_id",employee.id).maybeSingle()));
+      // Falhar fechado: se uma tabela estiver inacessível, não exibir ficha incompleta como completa.
+      const failed = results.find(result => result.error);
+      if (failed?.error) throw failed.error;
+      const combined: Employee = {...employee};
+      for (const result of results) if (result.data) {
+        for (const [key,value] of Object.entries(result.data)) {
+          if (!internal.has(key) && key !== "id") combined[key] = value;
+        }
+      }
+      setSelected(combined);
+    } catch(e) { setError(e instanceof Error ? e.message : "Não foi possível consultar a ficha."); }
+    finally { setDetailsLoading(false); }
+  }
   function printRecord(employee: Employee, printMode: PrintMode) {
     // A impressão usa somente dados já retornados pelo Supabase sob RLS.
     // Nenhuma ficha é armazenada em serviços externos.
@@ -73,9 +93,10 @@ export function EmployeeRecords() {
       <div className="grid gap-3 md:grid-cols-2">{items.map(item=><div key={item.id} className="rounded-lg border p-4">
         <div className="font-semibold">{item.name}</div><p className="text-sm text-muted-foreground">{formatValue(item.position)} · {formatValue(item.status)}</p>
         <div className="mt-3 flex flex-wrap gap-2">
-          <button className="inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm" onClick={()=>setSelected(item)}><Eye size={16}/> Visualizar</button>
+          <button className="inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm" onClick={()=>void openRecord(item)}><Eye size={16}/> Visualizar</button>
           <button className="inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm" onClick={()=>printRecord(item,"resumida")}><Printer size={16}/> Imprimir resumida</button>
         </div></div>)}</div>}
+    {detailsLoading && <p className="text-sm text-muted-foreground">Consultando ficha cadastral...</p>}
     {selected && <div role="dialog" aria-modal="true" aria-label="Ficha do colaborador" className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
       <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-xl bg-background p-6 shadow-xl">
         <div className="mb-4 flex items-start justify-between gap-4"><div><h2 className="text-xl font-semibold">{selected.name}</h2>
