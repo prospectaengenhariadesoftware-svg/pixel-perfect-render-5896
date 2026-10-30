@@ -59,8 +59,8 @@ export function RhModule() {
     try {
       const table = editing === "department" ? "rh_departments" : editing === "position" ? "rh_positions" : "rh_functions";
       const payload: Record<string, unknown> = { tenant_id: tenantId, name: form.name.trim(), description: form.description.trim() || null, status: form.status };
-      if (editing !== "department") payload.department_id = form.department_id || null;
-      if (editing === "function") payload.position_id = form.position_id || null;
+      if (editing !== "department") payload["department_id"] = form.department_id || null;
+      if (editing === "function") payload["position_id"] = form.position_id || null;
       const query = form.id ? supabase.from(table).update(payload).eq("id", form.id).eq("tenant_id", tenantId) : supabase.from(table).insert(payload);
       const { error: saveError } = await query; if (saveError) throw saveError;
       setEditing(null); setForm(emptyForm); setSuccess("Cadastro salvo com sucesso."); await loadMasters();
