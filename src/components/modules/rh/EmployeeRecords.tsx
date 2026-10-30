@@ -1,0 +1,185 @@
+import { useEffect, useState } from "react";
+import { Eye, Printer, X } from "lucide-react";
+import { getSupabase } from "@/lib/supabase";
+import { useTenant } from "@/lib/tenant-context";
+
+type Employee = Record<string, unknown> & { id: string; name: string };
+type PrintMode = "completa" | "resumida";
+const internal = new Set(["id", "tenant_id", "tenant_user_id", "employee_id", "created_by", "updated_by", "deleted_at", "created_at", "updated_at", "position"]);
+const sensitive = /cpf|rg|document|birth|nascimento|bank|banco|agencia|conta|pix|salario|salary|remuner|benefit|beneficio|pis|ctps|cnh|dependente/i;
+const labels: Record<string,string> = {
+    name: "Nome completo",
+    status: "Situação",
+    department_id: "Departamento",
+    position_id: "Cargo",
+    function_id: "Função",
+    admission_date: "Data de admissão",
+    termination_date: "Data de desligamento",
+    cpf: "CPF",
+    rg: "RG",
+    birth_date: "Data de nascimento",
+    sex: "Sexo",
+    marital_status: "Estado civil",
+    nationality: "Nacionalidade",
+    birth_place: "Naturalidade",
+    mother_name: "Nome da mãe",
+    father_name: "Nome do pai",
+    phone: "Telefone",
+    email: "E-mail",
+    emergency_contact_name: "Contato de emergência",
+    emergency_contact_relationship: "Parentesco do contato de emergência",
+    emergency_contact_phone: "Telefone de emergência",
+    postal_code: "CEP",
+    street: "Logradouro",
+    number: "Número",
+    complement: "Complemento",
+    district: "Bairro",
+    city: "Cidade",
+    state: "Estado (UF)",
+    pis_pasep: "PIS/PASEP",
+    ctps: "CTPS",
+    voter_registration: "Título de eleitor",
+    military_certificate: "Certificado de reservista",
+    cnh: "CNH",
+    cnh_category: "Categoria da CNH",
+    cnh_expires_at: "Validade da CNH",
+    bank_name: "Banco",
+    agency: "Agência",
+    account_number: "Número da conta",
+    account_type: "Tipo de conta",
+    pix_key: "Chave PIX",
+    salary: "Salário"
+};
+const formatLabel = (key: string) => labels[key] ?? key.replace(/_/g," ").replace(/^./,c=>c.toUpperCase());
+function formatValue(value: unknown, key = "") {
+  if (value === null || value === undefined || value === "") return "Não informado";
+  if (typeof value === "boolean") return value ? "Sim" : "Não";
+  if (key === "status") return String(value).replace(/^./,c=>c.toUpperCase());
+  if (/(_date|_at|_expires_at)$/.test(key) && typeof value === "string") { const match = value.match(/^(\d{4})-(\d{2})-(\d{2})/); if (match) return `${match[3]}/${match[2]}/${match[1]}`; }
+  if (typeof value === "object") return JSON.stringify(value);
+  return String(value);
+}
+function printableFields(employee: Employee, mode: PrintMode) {
+  return Object.entries(employee).filter(([key]) => !internal.has(key) && key in labels && (mode === "completa" || !sensitive.test(key)));
+}
+export function EmployeeRecords() {
+  const supabase = getSupabase();
+  const { tenant, status, error: tenantError } = useTenant();
+  const [items,setItems] = useState<Employee[]>([]);
+  const [selected,setSelected] = useState<Employee|null>(null);
+  const [detailsLoading,setDetailsLoading] = useState(false);
+  const [mode,setMode] = useState<PrintMode>("resumida");
+  const [loading,setLoading] = useState(false);
+  const [error,setError] = useState<string|null>(null);
+  useEffect(()=>{
+    if (!supabase || !tenant?.id) { setItems([]); return; }
+    let cancelled = false;
+    setLoading(true); setError(null);
+    void supabase.from("rh_employees").select("*").eq("tenant_id",tenant.id).is("deleted_at",null).order("name")
+      .then(({data,error})=>{
+        if(cancelled) return;
+        if(error) { setItems([]); setError(`Falha ao consultar colaboradores: ${error.message}`); }
+        else setItems((data ?? []) as Employee[]);
+        setLoading(false);
+      });
+    return ()=>{cancelled=true};
+  },[supabase,tenant?.id,status]);
+  async function openRecord(employee: Employee) {
+    if (!supabase || !tenant?.id) return;
+    setError(null); setDetailsLoading(true); setSelected(null);
+    try {
+      const tables = ["rh_employee_personal_details","rh_employee_addresses","rh_employee_documents","rh_employee_bank_accounts","rh_employee_compensation"] as const;
+      const [results, referenceResults] = await Promise.all([
+        Promise.all(tables.map(table => supabase.from(table).select("*").eq("tenant_id",tenant.id).eq("employee_id",employee.id).maybeSingle())),
+        Promise.all(["rh_departments","rh_positions","rh_functions"].map(table => supabase.from(table).select("id,name").eq("tenant_id",tenant.id)))
+      ]);
+      const referenceError = referenceResults.find(result => result.error);
+      if (referenceError?.error) throw referenceError.error;
+      const lookup: Record<string,string> = {};
+      for (const result of referenceResults) for (const row of result.data ?? []) lookup[row.id] = row.name;
+      // Falhar fechado: se uma tabela estiver inacessível, não exibir ficha incompleta como completa.
+      const failed = results.find(result => result.error);
+      if (failed?.error) throw failed.error;
+      const combined: Employee = {...employee};
+      for (const result of results) if (result.data) {
+        for (const [key,value] of Object.entries(result.data)) {
+          if (!internal.has(key) && key !== "id") combined[key] = value;
+        }
+      }
+      for (const key of ["department_id","position_id","function_id"]) {
+        const id = combined[key];
+        if (typeof id === "string") combined[key] = lookup[id] ?? "Cadastro não localizado";
+      }
+      setSelected(combined);
+    } catch(e) { setError(e instanceof Error ? e.message : "Não foi possível consultar a ficha."); }
+    finally { setDetailsLoading(false); }
+  }
+  function printRecord(employee: Employee, printMode: PrintMode) {
+    // A impressão usa somente dados já retornados pelo Supabase sob RLS.
+    // Nenhuma ficha é armazenada em serviços externos.
+    const frame = document.createElement("iframe");
+    frame.setAttribute("title", "Impressão da ficha cadastral");
+    frame.style.position = "fixed";
+    frame.style.width = "0";
+    frame.style.height = "0";
+    frame.style.border = "0";
+    frame.style.opacity = "0";
+    document.body.appendChild(frame);
+    const printWindow = frame.contentWindow;
+    if (!printWindow) { frame.remove(); setError("Não foi possível preparar a impressão."); return; }
+    const escapeHtml = (s: string) => s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c] ?? c));
+    const rows = printableFields(employee,printMode).map(([key,value])=>
+      `<div class="field"><div class="label">${escapeHtml(formatLabel(key))}</div><div>${escapeHtml(formatValue(value,key))}</div></div>`
+    ).join("");
+    printWindow.document.open();
+    printWindow.document.write(`<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>Ficha cadastral</title>
+      <style>@page{size:A4;margin:16mm}body{font:12px Arial,sans-serif;color:#151515;margin:0}
+      header{border-bottom:2px solid #222;padding-bottom:12px;margin-bottom:20px}h1{font-size:18px;margin:0 0 6px}
+      .muted,.label{color:#555}.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+      .field{padding:8px 0;border-bottom:1px solid #ddd;overflow-wrap:anywhere;break-inside:avoid}
+      .label{font-size:10px;margin-bottom:5px}footer{margin-top:24px;font-size:10px;color:#666}
+      @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style></head><body>
+      <header><h1>Ficha cadastral do colaborador</h1><div>${escapeHtml(tenant?.name ?? "Empresa")}</div>
+      <p class="muted">Versão ${printMode === "completa" ? "completa" : "resumida"} · Informações cadastrais</p></header>
+      <div class="grid">${rows}</div><footer>Documento gerado a partir das informações disponíveis no cadastro.</footer>
+      </body></html>`);
+    printWindow.document.close();
+    const cleanup = () => { window.setTimeout(() => frame.remove(), 1000); };
+    printWindow.addEventListener("afterprint", cleanup, { once: true });
+    // Aciona o diálogo de impressão no contexto do clique, sem abrir uma nova aba.
+    printWindow.focus();
+    printWindow.print();
+    window.setTimeout(() => { if (frame.isConnected) frame.remove(); }, 120000);
+  }
+  return <div className="space-y-4">
+    {(!tenant?.id || status === "error") && <p role="alert" className="rounded-md border border-amber-500/40 p-3 text-sm">Não foi possível identificar a empresa vinculada à sessão. {tenantError ?? "Verifique o acesso à empresa e atualize a página."}</p>}
+    {error && <p role="alert" className="rounded-md border border-destructive/40 p-3 text-sm text-destructive">{error}</p>}
+    {!tenant?.id ? null : loading ? <p className="text-sm text-muted-foreground">Carregando colaboradores...</p> :
+      items.length === 0 ? <p className="rounded-md border border-dashed p-6 text-sm text-muted-foreground">Nenhum colaborador encontrado.</p> :
+      <div className="grid gap-3 md:grid-cols-2">{items.map(item=><div key={item.id} className="rounded-lg border p-4">
+        <div className="font-semibold">{item.name}</div><p className="text-sm text-muted-foreground">{formatValue(item.status,"status")}</p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <button className="inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm" onClick={()=>void openRecord(item)}><Eye size={16}/> Visualizar</button>
+          <button className="inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm" onClick={()=>void openRecord(item)}><Printer size={16}/> Abrir ficha para impressão</button>
+        </div></div>)}</div>}
+    {detailsLoading && <p className="text-sm text-muted-foreground">Consultando ficha cadastral...</p>}
+    {selected && <div role="dialog" aria-modal="true" aria-label="Ficha do colaborador" className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+      <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-xl bg-background p-6 shadow-xl">
+        <div className="mb-4 flex items-start justify-between gap-4"><div><h2 className="text-xl font-semibold">{selected.name}</h2>
+          <p className="text-sm text-muted-foreground">Ficha cadastral · {tenant?.name}</p></div>
+          <button aria-label="Fechar" className="rounded-md p-2 hover:bg-muted" onClick={()=>setSelected(null)}><X size={20}/></button></div>
+        <label className="mb-4 block text-sm font-medium">Tipo de ficha
+          <select className="ml-3 rounded-md border bg-background px-3 py-2" value={mode} onChange={e=>setMode(e.target.value as PrintMode)}>
+            <option value="resumida">Resumida</option><option value="completa">Completa (inclui dados sensíveis)</option>
+          </select></label>
+        <div className="grid gap-3 sm:grid-cols-2">{printableFields(selected,mode).map(([key,value])=>
+          <div key={key} className="min-w-0 rounded-md border p-3"><p className="text-xs text-muted-foreground">{formatLabel(key)}</p>
+            <p className="break-words text-sm font-medium">{formatValue(value,key)}</p></div>)}</div>
+        <div className="mt-5 flex justify-end gap-2">
+          <button className="rounded-md border px-4 py-2 text-sm" onClick={()=>setSelected(null)}>Fechar</button>
+          <button className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm text-primary-foreground" onClick={()=>printRecord(selected,mode)}>
+            <Printer size={16}/> Imprimir ficha</button>
+        </div>
+      </div></div>}
+  </div>;
+}
