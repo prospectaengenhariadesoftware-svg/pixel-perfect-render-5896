@@ -25,7 +25,7 @@ function printableFields(employee: Employee, mode: PrintMode) {
 }
 export function EmployeeRecords() {
   const supabase = getSupabase();
-  const { tenant, status } = useTenant();
+  const { tenant, status, error: tenantError } = useTenant();
   const [items,setItems] = useState<Employee[]>([]);
   const [selected,setSelected] = useState<Employee|null>(null);
   const [detailsLoading,setDetailsLoading] = useState(false);
@@ -33,13 +33,13 @@ export function EmployeeRecords() {
   const [loading,setLoading] = useState(false);
   const [error,setError] = useState<string|null>(null);
   useEffect(()=>{
-    if (!supabase || !tenant?.id || status !== "ready") return;
+    if (!supabase || !tenant?.id) { setItems([]); return; }
     let cancelled = false;
     setLoading(true); setError(null);
     void supabase.from("rh_employees").select("*").eq("tenant_id",tenant.id).is("deleted_at",null).order("name")
       .then(({data,error})=>{
         if(cancelled) return;
-        if(error) setError(error.message);
+        if(error) { setItems([]); setError(`Falha ao consultar colaboradores: ${error.message}`); }
         else setItems((data ?? []) as Employee[]);
         setLoading(false);
       });
@@ -87,8 +87,9 @@ export function EmployeeRecords() {
     popup.document.close();
   }
   return <div className="space-y-4">
+    {(!tenant?.id || status === "error") && <p role="alert" className="rounded-md border border-amber-500/40 p-3 text-sm">Não foi possível identificar a empresa vinculada à sessão. {tenantError ?? "Verifique o acesso à empresa e atualize a página."}</p>}
     {error && <p role="alert" className="rounded-md border border-destructive/40 p-3 text-sm text-destructive">{error}</p>}
-    {loading ? <p className="text-sm text-muted-foreground">Carregando colaboradores...</p> :
+    {!tenant?.id ? null : loading ? <p className="text-sm text-muted-foreground">Carregando colaboradores...</p> :
       items.length === 0 ? <p className="rounded-md border border-dashed p-6 text-sm text-muted-foreground">Nenhum colaborador encontrado.</p> :
       <div className="grid gap-3 md:grid-cols-2">{items.map(item=><div key={item.id} className="rounded-lg border p-4">
         <div className="font-semibold">{item.name}</div><p className="text-sm text-muted-foreground">{formatValue(item.position)} · {formatValue(item.status)}</p>
