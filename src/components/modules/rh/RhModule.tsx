@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { Pencil, Plus, Trash2, UsersRound } from "lucide-react";
+import { Pencil, Plus, Trash2 } from "lucide-react";
+import { EmployeeRecords } from "./EmployeeRecords";
 import { PageHeader } from "@/components/app/ui-kit";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -99,7 +100,7 @@ export function RhModule() {
   return <div className="mx-auto w-full max-w-6xl space-y-6"><PageHeader eyebrow="Recursos Humanos" title="Gestão de Pessoas" description="Colaboradores, departamentos, cargos, funções e informações profissionais da empresa." />
     {error && <div className="rounded-lg border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive">{error}</div>}{success && <div className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 p-4 text-sm">{success}</div>}
     <Tabs defaultValue="colaboradores"><TabsList className="flex h-auto flex-wrap justify-start"><TabsTrigger value="colaboradores">Colaboradores</TabsTrigger><TabsTrigger value="departamentos">Departamentos</TabsTrigger><TabsTrigger value="cargos">Cargos</TabsTrigger><TabsTrigger value="funcoes">Funções</TabsTrigger></TabsList>
-      <TabsContent value="colaboradores"><Card className="shadow-card"><CardHeader><CardTitle>Colaboradores</CardTitle></CardHeader><CardContent><div className="rounded-lg border border-dashed p-8 text-center"><UsersRound className="mx-auto mb-3 h-8 w-8 text-muted-foreground"/><div className="font-semibold">Cadastro de colaboradores</div><p className="mt-1 text-sm text-muted-foreground">A ficha completa será integrada nesta etapa com dados pessoais, profissionais, documentos, endereço, banco e remuneração.</p></div></CardContent></Card></TabsContent>
+      <TabsContent value="colaboradores"><Card className="shadow-card"><CardHeader><CardTitle>Colaboradores</CardTitle></CardHeader><CardContent><EmployeeRecords /></CardContent></Card></TabsContent>
       <TabsContent value="departamentos"><Card className="shadow-card"><CardHeader><CardTitle>Departamentos</CardTitle></CardHeader><CardContent>{renderMasterList("department", departments)}</CardContent></Card></TabsContent>
       <TabsContent value="cargos"><Card className="shadow-card"><CardHeader><CardTitle>Cargos</CardTitle></CardHeader><CardContent>{renderMasterList("position", positions)}</CardContent></Card></TabsContent>
       <TabsContent value="funcoes"><Card className="shadow-card"><CardHeader><CardTitle>Funções</CardTitle></CardHeader><CardContent>{renderMasterList("function", functions)}</CardContent></Card></TabsContent>
