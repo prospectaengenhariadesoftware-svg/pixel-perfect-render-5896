@@ -34,7 +34,7 @@ function NotFoundComponent() {
   );
 }
 
-function ErrorComponent({ error }: { error: Error; reset: () => void }) {
+function ErrorComponent({ error }: { error: unknown; reset: () => void }) {
   console.error(error);
   const diagnosticMessage = error instanceof Error ? error.message : String(error);
   const diagnosticCode = `FE-${Array.from(diagnosticMessage).reduce(
